@@ -36,13 +36,13 @@ async def status(interaction: discord.Interaction):
         json_data = response.json()
         print(json_data["online"])
         if (json_data["online"] == True):
-            await interaction.response.send_message("The Minecraft Cult Server is online!")
+            await interaction.response.send_message(":green_circle: The Minecraft Cult Server is online!")
         else:
             tylerUserID = 336959815374864384
-            await interaction.response.send_message(f"<@{tylerUserID}> The Minecraft Cult Server is Offline! :(")
+            await interaction.response.send_message(f":red_circle: <@{tylerUserID}> The Minecraft Cult Server is Offline! :(")
     else:
         print(f"API call to {url} failed with status code {response.status_code}.")
-        await interaction.response.send_message("Could not check for online status")
+        await interaction.response.send_message(":warning: Could not check for online status")
 
 
 
