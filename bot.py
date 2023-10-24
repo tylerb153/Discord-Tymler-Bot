@@ -7,7 +7,7 @@ from mcrcon import MCRcon #mcrcon is used to create a remote console to your min
 import requests;
 import json;
 
-Token_File = open("Token-File.env","r")
+Token_File = open("Token_File.env","r")
 TOKEN = Token_File.readline()
 Token_File.close()
 
