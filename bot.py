@@ -34,6 +34,8 @@ async def whitelist(interaction: discord.Interaction, username: str):
         with MCRcon(os.getenv('MINECRAFT_SERVER_IP_ADDRESS'), os.getenv('RCON_PASSWORD')) as mcr: #send the whitelist command to minecraft server
             resp = mcr.command("/whitelist add " + username)
             print(resp)
+            if 'whitelisted' in resp:
+                finalmsg = f'{username} is already whitelisted'
         await interaction.user.add_roles(discord.utils.get(interaction.user.guild.roles, name="Cult 2.0 Members"))
     else:
         print('The minecraft server may not be running')
