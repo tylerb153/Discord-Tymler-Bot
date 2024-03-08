@@ -1,17 +1,15 @@
-import os
-from pydoc import describe
-import time
-from urllib import response
 import discord
 from discord import app_commands
 from mcrcon import MCRcon #mcrcon is used to create a remote console to your minecraft server
 import requests;
 import random
-import json;
+import dotenv
+import os
+import subprocess
+import platform
 
-Token_File = open("Token_File.env","r")
-TOKEN = Token_File.readline()
-Token_File.close()
+dotenv.load_dotenv()
+TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 
 guild = discord.Object(id=554203267001745419)
 intents = discord.Intents.all()
@@ -24,12 +22,26 @@ tylerUserID = 336959815374864384 #Used in multiple commands
 @tree.command(name='whitelist', description='Add your minecraft username to the whitelist')
 
 async def whitelist(interaction: discord.Interaction, username: str):
+    await interaction.response.defer()
     print(username)
-    finalmsg = username + " has been added" #adds usrname and has been added to the varible finalmsg
-    with MCRcon("127.0.0.1", "1234") as mcr: #send the whitelist command to minecraft server
-        resp = mcr.command("/whitelist add " + username)
-    await interaction.response.send_message(finalmsg)
-    await interaction.user.add_roles(discord.utils.get(interaction.user.guild.roles, name="Cult 2.0 Members"))
+    finalmsg = f'{username} was added to the whitelist' #adds usrname and has been added to the varible finalmsg
+    if platform.system() == 'Windows':
+        command = 'tasklist'
+    else:
+        command = 'ps aux'
+    output = subprocess.check_output(command, shell=True).decode()
+    if (os.getenv('MC_SERVER_PROCESS_NAME') in output):
+        with MCRcon(os.getenv('MINECRAFT_SERVER_IP_ADDRESS'), 'RCON_PASSWORD') as mcr: #send the whitelist command to minecraft server
+            resp = mcr.command("/whitelist add " + username)
+            print(resp)
+        await interaction.user.add_roles(discord.utils.get(interaction.user.guild.roles, name="Cult 2.0 Members"))
+    else:
+        print('The minecraft server may not be running')
+        finalmsg = f'<@{tylerUserID}> I couldn\'t add {username} :sob:'
+
+    await interaction.edit_original_response(content=finalmsg)
+        
+
 
 onlineGroup = app_commands.Group(name="online", description='Returns whether the server is up and running or not.')
 
