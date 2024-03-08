@@ -123,7 +123,7 @@ async def remove(interaction: discord.Interaction, role: discord.Role):
 
 ## Helper Functions ##
 def getColor(color: str):
-    color.strip('#')
+    color = color.strip('#')
     match color.capitalize():
         case 'Teal':
             return discord.Color.teal()
@@ -198,9 +198,9 @@ def getColor(color: str):
         case _:
             colorToReturn = ''
             try:
-                # print(color)
+                print(color)
                 colorToReturn = discord.Color.from_str(f'#{color}')
-                # print(colorToReturn)
+                print(colorToReturn)
             except:
                 colorToReturn = discord.Color.from_rgb(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
             return colorToReturn
