@@ -148,7 +148,10 @@ async def play(interaction: discord.Interaction, url: str = ''):
         await interaction.edit_original_response(content=f'You are not in a voice channel!')
         return
     if not discord.opus.is_loaded():
-        discord.opus.load_opus('/opt/homebrew/Cellar/opus/1.5.1/lib/libopus.0.dylib')
+        if platform.system() == 'Windows':
+            discord.opus.load_opus('opus')
+        else:
+            discord.opus.load_opus('/opt/homebrew/Cellar/opus/1.5.1/lib/libopus.0.dylib')
     botVC: discord.VoiceClient = interaction.guild.voice_client
     if not (botVC and botVC.is_connected()):
         try:
