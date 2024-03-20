@@ -149,7 +149,7 @@ async def play(interaction: discord.Interaction, url: str = ''):
         return
     if not discord.opus.is_loaded():
         if platform.system() == 'Windows':
-            discord.opus.load_opus('opus')
+            pass
         else:
             discord.opus.load_opus('/opt/homebrew/Cellar/opus/1.5.1/lib/libopus.0.dylib')
     botVC: discord.VoiceClient = interaction.guild.voice_client
