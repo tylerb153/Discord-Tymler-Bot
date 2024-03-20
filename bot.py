@@ -157,8 +157,10 @@ async def play(interaction: discord.Interaction, url: str = ''):
         try:
             botVC = await interaction.user.voice.channel.connect()
             print(f'Joined {userVC.channel.name}')
-        except:
-            print(f'Error in connecting to {userVC.channel.name}')
+        except Exception as e:
+            print(f'Error in connecting to {userVC.channel.name}\n{e}')
+            await interaction.edit_original_response(content=f'Failed to connect to {userVC.channel.name}')
+            return
 
     if botVC.is_paused():
         botVC.resume()
