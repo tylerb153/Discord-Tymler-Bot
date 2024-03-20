@@ -1,6 +1,9 @@
+import time
 import discord
 from discord import app_commands
+from discord import FFmpegPCMAudio
 from mcrcon import MCRcon #mcrcon is used to create a remote console to your minecraft server
+import youtube_dl
 import requests;
 import random
 import dotenv
@@ -133,6 +136,80 @@ async def remove(interaction: discord.Interaction, role: discord.Role):
         await interaction.edit_original_response(content=f'You don\'t have the role **{role.name}** so I can\'t remove it from you.')
         print(f'{interaction.user.display_name} does not have {role.name}')
 
+mediaGroup = app_commands.Group(name='media', description='Controls to play music/videos from Youtube')
+
+@mediaGroup.command(name='play', description='Youtube url in sweet sweet add-free potentially pirated music come out or resumes it')
+async def play(interaction: discord.Interaction, url: str = ''):
+    await interaction.response.defer()
+    userVC = interaction.user.voice
+    if not userVC:
+        await interaction.edit_original_response(content=f'You are not in a voice channel!')
+        return
+    if not discord.opus.is_loaded():
+        discord.opus.load_opus('/opt/homebrew/Cellar/opus/1.5.1/lib/libopus.0.dylib')
+    botVC: discord.VoiceClient = interaction.guild.voice_client
+    if not (botVC and botVC.is_connected()):
+        try:
+            botVC = await interaction.user.voice.channel.connect()
+            print(f'Joined {userVC.channel.name}')
+        except:
+            print(f'Error in connecting to {userVC.channel.name}')
+
+
+    audioSource = FFmpegPCMAudio('CentennialMarchIntro.mp3')
+    
+    if botVC.is_paused():
+        botVC.resume()
+        await interaction.edit_original_response(content=f'Resuming audio')
+        return
+    if not botVC.is_playing():
+        botVC.play(audioSource)
+
+    await interaction.edit_original_response(content=f'Playing {url} in {userVC.channel.jump_url}')
+
+@mediaGroup.command(name='leave', description='Force the bot to leave the channel at all costs')
+async def leave(interaction: discord.Interaction):
+    await interaction.response.defer()
+    try:
+        botVC: discord.VoiceClient = interaction.guild.voice_client
+        if botVC and botVC.is_playing():
+            await botVC.disconnect()
+        await interaction.edit_original_response(content=(f'Disconnected myself successfully'))
+    except Exception as e:
+        await interaction.edit_original_response(content=f'Could not disconnect')
+        print(f'Could not disconnect voice client in {interaction.guild.name}: {interaction.guild.id}\n{e}')
+
+@mediaGroup.command(name='stop', description='Stops playing audio')
+async def stop(interaction: discord.Interaction):
+    await interaction.response.defer()
+    userVC = interaction.user.voice
+    if not userVC:
+        await interaction.edit_original_response(content=f'You are not in a voice channel!')
+        return
+    try:
+        botVC: discord.VoiceClient = interaction.guild.voice_client
+        if botVC:
+            botVC.stop()
+        await interaction.edit_original_response(content=(f'Stopped audio successfully'))
+    except Exception as e:
+        await interaction.edit_original_response(content=f'Could not stop audio')
+        print(f'Could not stop audio in {interaction.guild.name}: {interaction.guild.id}\n{e}')
+
+@mediaGroup.command(name='pause', description='Pauses playing audio')
+async def pause(interaction: discord.Interaction):
+    await interaction.response.defer()
+    userVC = interaction.user.voice
+    if not userVC:
+        await interaction.edit_original_response(content=f'You are not in a voice channel!')
+        return
+    try:
+        botVC: discord.VoiceClient = interaction.guild.voice_client
+        if botVC and botVC.is_playing():
+            botVC.pause()
+        await interaction.edit_original_response(content=(f'Paused audio successfully'))
+    except Exception as e:
+        await interaction.edit_original_response(content=f'Could not pause audio')
+        print(f'Could not pause audio in {interaction.guild.name}: {interaction.guild.id}\n{e}')
 
 
 ## Helper Functions ##
@@ -230,6 +307,13 @@ def getBannedRoles(interaction: discord.Interaction) -> dict:
             bannedRoles[role.id] = role.name
     return bannedRoles
 
+
+
+
+
+
+## Detect when user enters vc ## 
+
 ## Run Discord Client ##
 @client.event
 async def on_ready():
@@ -237,6 +321,7 @@ async def on_ready():
     tree.add_command(whitelist)
     tree.add_command(onlineGroup)
     tree.add_command(roleGroup)
+    tree.add_command(mediaGroup)
     await tree.sync()
     print("Ready")
 
