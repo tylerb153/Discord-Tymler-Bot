@@ -1,10 +1,11 @@
+import asyncio
 import time
 import discord
 from discord import app_commands
 from discord import FFmpegPCMAudio
 from mcrcon import MCRcon #mcrcon is used to create a remote console to your minecraft server
-import youtube_dl
-import requests;
+import yt_dlp
+import requests
 import random
 import dotenv
 import os
@@ -21,6 +22,7 @@ tree = app_commands.CommandTree(client)
 
 ## User ID ##
 tylerUserID = 336959815374864384 #Used in multiple commands
+
 
 @tree.command(name='whitelist', description='Add your minecraft username to the whitelist')
 
@@ -155,25 +157,73 @@ async def play(interaction: discord.Interaction, url: str = ''):
         except:
             print(f'Error in connecting to {userVC.channel.name}')
 
-
-    audioSource = FFmpegPCMAudio('CentennialMarchIntro.mp3')
-    
     if botVC.is_paused():
         botVC.resume()
         await interaction.edit_original_response(content=f'Resuming audio')
         return
-    if not botVC.is_playing():
-        botVC.play(audioSource)
 
-    await interaction.edit_original_response(content=f'Playing {url} in {userVC.channel.jump_url}')
+    # https://www.youtube.com/playlist?list=PLZCI3QwWlHdSNssf8Wue0AGQhFRqPUhZj
+    if 'playlist' in url:
+        await interaction.edit_original_response(content=f'Long playlists will take some time to start please be patient')
+        try:
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '192',
+                }],
+                'ignoreerrors': True,
+                'flat_playlist': True
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                loop = asyncio.get_event_loop()
+                playlistDict = await loop.run_in_executor(None, extractInfo, ydl, url)
+                await interaction.edit_original_response(content=f'Playing {url} in {userVC.channel.jump_url}')
+                i = 0
+                for video in playlistDict['entries']:
+                    i += 1
+                    print(i)
+                    if video is not None:
+                        videoInfo = await loop.run_in_executor(None, extractInfo, ydl, video['url'])
+                        url2 = videoInfo['formats'][0]['url']
+                        playAudio(botVC, url2)
+                        while botVC.is_playing():
+                            await asyncio.sleep(10)
+        except Exception as e:
+            await interaction.edit_original_response(content=f'Could not play playlist {url}')
+            print(e)
+    
+    # https://www.youtube.com/watch?v=YI1-9pD7RCI
+    else:
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
+            'ignoreerrors': True,
+            'noplaylist': True
+        }
+        await interaction.edit_original_response(content=f'Playing {url} in {userVC.channel.jump_url}')
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                loop = asyncio.get_event_loop()
+                videoInfo = await loop.run_in_executor(None, extractInfo, ydl, url)
+                url2 = videoInfo['url']
+                print(url2)
+                playAudio(botVC, url2)
+        except Exception as e:
+            await interaction.edit_original_response(content=f'Could not play {url}')
+            print(e)
 
 @mediaGroup.command(name='leave', description='Force the bot to leave the channel at all costs')
 async def leave(interaction: discord.Interaction):
     await interaction.response.defer()
     try:
         botVC: discord.VoiceClient = interaction.guild.voice_client
-        if botVC and botVC.is_playing():
-            await botVC.disconnect()
+        await botVC.disconnect()
         await interaction.edit_original_response(content=(f'Disconnected myself successfully'))
     except Exception as e:
         await interaction.edit_original_response(content=f'Could not disconnect')
@@ -211,7 +261,9 @@ async def pause(interaction: discord.Interaction):
         await interaction.edit_original_response(content=f'Could not pause audio')
         print(f'Could not pause audio in {interaction.guild.name}: {interaction.guild.id}\n{e}')
 
-
+#TODO - Skip functionality (will probably require a queue system instead)
+        
+    
 ## Helper Functions ##
 def getColor(color: str):
     color = color.strip('#')
@@ -307,6 +359,11 @@ def getBannedRoles(interaction: discord.Interaction) -> dict:
             bannedRoles[role.id] = role.name
     return bannedRoles
 
+def extractInfo(ydl, url):
+    return ydl.extract_info(url, download= False)
+
+def playAudio(botVC: discord.VoiceClient, url):
+    botVC.play(FFmpegPCMAudio(source=url))
 
 
 
