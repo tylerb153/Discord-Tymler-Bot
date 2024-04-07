@@ -30,12 +30,7 @@ async def whitelist(interaction: discord.Interaction, username: str):
     await interaction.response.defer()
     print(username)
     finalmsg = f'{username} was added to the whitelist' #adds usrname and has been added to the varible finalmsg
-    if platform.system() == 'Windows':
-        command = 'tasklist'
-    else:
-        command = 'ps aux'
-    output = subprocess.check_output(command, shell=True).decode()
-    if (os.getenv('MC_SERVER_PROCESS_NAME') in output):
+    if (getServerRunning()):
         with MCRcon(os.getenv('MINECRAFT_SERVER_IP_ADDRESS'), os.getenv('RCON_PASSWORD')) as mcr: #send the whitelist command to minecraft server
             resp = mcr.command("/whitelist add " + username)
             print(resp)
@@ -50,9 +45,9 @@ async def whitelist(interaction: discord.Interaction, username: str):
         
 
 
-onlineGroup = app_commands.Group(name="online", description='Returns whether the server is up and running or not.')
+serverGroup = app_commands.Group(name="server", description='Contains commands that affect the minecraft server.')
 
-@onlineGroup.command(name='status', description='Returns whether the server is up and running or not.')
+@serverGroup.command(name='status', description='Returns whether the server is up and running or not.')
 async def status(interaction: discord.Interaction):
     await interaction.response.defer()
     # print(f'After deferment the interaction is {interaction.response.is_done()}')
@@ -70,6 +65,25 @@ async def status(interaction: discord.Interaction):
     else:
         print(f"API call to {url} failed with status code {response.status_code}.")
         await interaction.edit_original_response(content=":warning: Could not check for online status")
+
+@serverGroup.command(name="start", description="If the minecraft server is down start it.")
+async def start(interaction: discord.Interaction):
+    await interaction.response.defer()
+    if platform.system() != 'Windows':
+        await interaction.edit_original_response(content="You shouldn't see this message but if you do the bot needs to be run on windows")
+        return
+    if (getServerRunning()):
+        await interaction.edit_original_response(content="The server is already running, use /Server Status to check")
+        return
+    if (not getServerRunning()):
+        try:
+            subprocess.run([os.getenv('SERVER_START_PATH')], shell=True)
+            await interaction.edit_original_response(content="The server is now starting please wait a minute or two and join")
+        except Exception as e:
+            print(f'An error occured in the start command with error:\n{e}')
+            await interaction.edit_original_response(content=f"The server could not start everyone start panicing <@{tylerUserID}> help us please!")
+            return
+
 
 roleGroup = app_commands.Group(name='role', description='Manages user roles')
 
@@ -370,6 +384,16 @@ def extractInfo(ydl, url):
 def playAudio(botVC: discord.VoiceClient, url):
     botVC.play(FFmpegPCMAudio(source=url))
 
+def getServerRunning() -> bool:
+    if platform.system() == 'Windows':
+        command = 'tasklist'
+    else:
+        command = 'ps aux'
+    output = subprocess.check_output(command, shell=True).decode()
+    if (os.getenv('MC_SERVER_PROCESS_NAME') in output):
+        return True
+    else:
+        return False
 
 
 
@@ -381,7 +405,7 @@ def playAudio(botVC: discord.VoiceClient, url):
 async def on_ready():
     tree.clear_commands(guild=None)
     tree.add_command(whitelist)
-    tree.add_command(onlineGroup)
+    tree.add_command(serverGroup)
     tree.add_command(roleGroup)
     tree.add_command(mediaGroup)
     await tree.sync()
