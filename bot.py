@@ -36,7 +36,7 @@ async def whitelist(interaction: discord.Interaction, username: str):
             print(resp)
             if 'whitelisted' in resp:
                 finalmsg = f'{username} is already whitelisted'
-        await interaction.user.add_roles(discord.utils.get(interaction.user.guild.roles, name="Cult 2.0 Members"))
+        await interaction.user.add_roles(discord.utils.get(interaction.user.guild.roles, name="Cult 2.5 Members"))
     else:
         print('The minecraft server may not be running')
         finalmsg = f'<@{tylerUserID}> I couldn\'t add {username} :sob:'
