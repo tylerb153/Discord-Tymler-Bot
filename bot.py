@@ -56,9 +56,10 @@ async def status(interaction: discord.Interaction):
 
     if response.status_code == 200:
         json_data = response.json()
+        print(json_data['players']['online'])
         print(json_data["online"])
         if (json_data["online"] == True):
-            await interaction.edit_original_response(content=":green_circle: The Minecraft Cult Server is online!")
+            await interaction.edit_original_response(content=f":green_circle: The Minecraft Cult Server is online with {json_data['players']['online']} players connected!")
         else:
             print("Server offline")
             await interaction.edit_original_response(content=f":red_circle: <@{tylerUserID}> The Minecraft Cult Server is Offline! :(")
