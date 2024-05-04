@@ -70,20 +70,21 @@ async def status(interaction: discord.Interaction):
 @serverGroup.command(name="start", description="If the minecraft server is down start it.")
 async def start(interaction: discord.Interaction):
     await interaction.response.defer()
-    if platform.system() != 'Windows':
-        await interaction.edit_original_response(content="You shouldn't see this message but if you do the bot needs to be run on windows")
-        return
-    if (getServerRunning()):
-        await interaction.edit_original_response(content="The server is already running, use /Server Status to check")
-        return
-    if (not getServerRunning()):
-        try:
-            subprocess.run([os.getenv('SERVER_START_PATH')], shell=True)
-            await interaction.edit_original_response(content="The server is now starting please wait a minute or two and join")
-        except Exception as e:
-            print(f'An error occured in the start command with error:\n{e}')
-            await interaction.edit_original_response(content=f"The server could not start everyone start panicing <@{tylerUserID}> help us please!")
-            return
+    await interaction.edit_original_response(content=f"Pardon my dust this is currently unfinished sorry <@{tylerUserID}> will need to start it")
+    # if platform.system() != 'Windows':
+    #     await interaction.edit_original_response(content="You shouldn't see this message but if you do the bot needs to be run on windows")
+    #     return
+    # if (getServerRunning()):
+    #     await interaction.edit_original_response(content="The server is already running, use /Server Status to check")
+    #     return
+    # if (not getServerRunning()):
+    #     try:
+    #         subprocess.run([os.getenv('SERVER_START_PATH')], shell=True)
+    #         await interaction.edit_original_response(content="The server is now starting please wait a minute or two and join")
+    #     except Exception as e:
+    #         print(f'An error occured in the start command with error:\n{e}')
+    #         await interaction.edit_original_response(content=f"The server could not start everyone start panicing <@{tylerUserID}> help us please!")
+    #         return
 
 
 roleGroup = app_commands.Group(name='role', description='Manages user roles')
