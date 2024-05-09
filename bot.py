@@ -387,6 +387,7 @@ def playAudio(botVC: discord.VoiceClient, url):
     botVC.play(FFmpegPCMAudio(source=url))
 
 def getServerRunning() -> bool:
+    return True
     if platform.system() == 'Windows':
         command = 'tasklist'
     else:
