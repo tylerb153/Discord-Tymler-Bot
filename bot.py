@@ -30,15 +30,19 @@ async def whitelist(interaction: discord.Interaction, username: str):
     await interaction.response.defer()
     print(username)
     finalmsg = f'{username} was added to the whitelist' #adds usrname and has been added to the varible finalmsg
-    if (getServerRunning()):
-        with MCRcon(os.getenv('MINECRAFT_SERVER_IP_ADDRESS'), os.getenv('RCON_PASSWORD')) as mcr: #send the whitelist command to minecraft server
-            resp = mcr.command("/whitelist add " + username)
-            print(resp)
-            if 'whitelisted' in resp:
-                finalmsg = f'{username} is already whitelisted'
-        await interaction.user.add_roles(discord.utils.get(interaction.user.guild.roles, name="Cult 2.5 Members"))
-    else:
-        print('The minecraft server may not be running')
+ 
+    try:    
+        if (getServerRunning()):
+            with MCRcon(os.getenv('MINECRAFT_SERVER_IP_ADDRESS'), os.getenv('RCON_PASSWORD')) as mcr: #send the whitelist command to minecraft server
+                resp = mcr.command("/whitelist add " + username)
+                print(resp)
+                if 'whitelisted' in resp:
+                    finalmsg = f'{username} is already whitelisted'
+            await interaction.user.add_roles(discord.utils.get(interaction.user.guild.roles, name="Cult 2.5 Members"))
+        else:
+            raise Exception('The minecraft server may not be running')
+    except Exception as e:
+        print(f'An error occured in the whitelist command with error:\n{e}')
         finalmsg = f'<@{tylerUserID}> I couldn\'t add {username} :sob:'
 
     await interaction.edit_original_response(content=finalmsg)
@@ -70,21 +74,38 @@ async def status(interaction: discord.Interaction):
 @serverGroup.command(name="start", description="If the minecraft server is down start it.")
 async def start(interaction: discord.Interaction):
     await interaction.response.defer()
-    await interaction.edit_original_response(content=f"Pardon my dust this is currently unfinished sorry <@{tylerUserID}> will need to start it")
-    # if platform.system() != 'Windows':
-    #     await interaction.edit_original_response(content="You shouldn't see this message but if you do the bot needs to be run on windows")
-    #     return
-    # if (getServerRunning()):
-    #     await interaction.edit_original_response(content="The server is already running, use /Server Status to check")
-    #     return
-    # if (not getServerRunning()):
-    #     try:
-    #         subprocess.run([os.getenv('SERVER_START_PATH')], shell=True)
-    #         await interaction.edit_original_response(content="The server is now starting please wait a minute or two and join")
-    #     except Exception as e:
-    #         print(f'An error occured in the start command with error:\n{e}')
-    #         await interaction.edit_original_response(content=f"The server could not start everyone start panicing <@{tylerUserID}> help us please!")
-    #         return
+    try:
+        if getServerRunning():
+            await interaction.edit_original_response(content="The server is already running, use **/server status** to check 😜")
+        else:
+            ssh_command = ['ssh', f'{os.getenv("SSH_USERNAME")}@{os.getenv("SSH_HOSTNAME")}', f'nohup bash {os.getenv("SSH_SCRIPT_PATH")}/serverStart.sh > /dev/null 2>&1 &']
+            subprocess.run(ssh_command, capture_output=False, text=True)
+            await interaction.edit_original_response(content="The server is starting please don't panic and cry!")
+    except Exception as e:
+        print(f'An error occured in the start command with error:\n{e}')
+        await interaction.edit_original_response(content=f"<@{tylerUserID}> I couldn't start the server :sob:")
+
+adminGroup = app_commands.Group(name="admin", description="Commands that only the admins can use")
+@adminGroup.command(name="stop", description="If the minecraft server is running stop it.")
+async def stop(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    try:
+        if not getServerRunning():
+            await interaction.edit_original_response(content="The server is already stopped")
+        else:
+            with MCRcon(os.getenv('MINECRAFT_SERVER_IP_ADDRESS'), os.getenv('RCON_PASSWORD')) as mcr:
+                resp = mcr.command("say the server is stopping in 10 seconds")
+                print(resp)
+                await asyncio.sleep(10)
+                resp = mcr.command("save-all")
+                print(resp)
+                resp = mcr.command("stop")
+                print(resp)
+            await interaction.edit_original_response(content="The server has stopping!")
+    except Exception as e:
+        print(f'An error occured in the stop command with error:\n{e}')
+        await interaction.edit_original_response(content=f"<@{tylerUserID}> I couldn't stop the server for you :sob:")
+
 
 
 roleGroup = app_commands.Group(name='role', description='Manages user roles')
@@ -387,16 +408,24 @@ def playAudio(botVC: discord.VoiceClient, url):
     botVC.play(FFmpegPCMAudio(source=url))
 
 def getServerRunning() -> bool:
-    return True
-    if platform.system() == 'Windows':
-        command = 'tasklist'
-    else:
-        command = 'ps aux'
-    output = subprocess.check_output(command, shell=True).decode()
-    if (os.getenv('MC_SERVER_PROCESS_NAME') in output):
-        return True
-    else:
-        return False
+    ssh_command = ['ssh', f'{os.getenv("SSH_USERNAME")}@{os.getenv("SSH_HOSTNAME")}', f'bash {os.getenv("SSH_SCRIPT_PATH")}/serverStatus.sh']
+
+    try:
+        result = subprocess.run(ssh_command, capture_output=True, text=True)
+
+        output = (result.stdout).strip('\n')
+        error = result.stderr
+        
+        if output == "true" and error == '':
+            return True
+        elif output == "false" and error == '':
+            return False
+        else:
+            raise Exception(f'getServerRunning() failed with error in ssh command: \n{error}')
+
+    except Exception as e:
+        print(f'Exeption occured while running ssh command in getServerRunning()\n{e}')
+        raise e
 
 
 
@@ -411,6 +440,7 @@ async def on_ready():
     tree.add_command(serverGroup)
     tree.add_command(roleGroup)
     tree.add_command(mediaGroup)
+    tree.add_command(adminGroup)
     await tree.sync()
     print("Ready")
 
