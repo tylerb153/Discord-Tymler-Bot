@@ -441,7 +441,7 @@ async def on_ready():
     tree.add_command(whitelist)
     tree.add_command(serverGroup)
     tree.add_command(roleGroup)
-    tree.add_command(mediaGroup)
+    # tree.add_command(mediaGroup)
     tree.add_command(adminGroup)
     await tree.sync()
     print("Ready")
