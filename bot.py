@@ -117,15 +117,16 @@ async def add(interaction: discord.Interaction, name: str, color: str = ""):
     await interaction.response.defer(ephemeral=True)
     color = getColor(color)
     customRoleDividerName = "TymlerBot" #Look at making this dynamic
-    nameStripped = name.strip('@&<>')
+    nameStripped = name.strip('/@&<>')
 
     if name == '@everyone':
         await interaction.edit_original_response(content=f'You have @everyone by default :man_facepalming:', allowed_mentions=False)
         return
     
     bannedRoles = getBannedRoles(interaction)
-    # print(bannedRoles)
-    if nameStripped in bannedRoles or name in bannedRoles.values():
+    # print(bannedRoles.keys())
+    # print(nameStripped)
+    if nameStripped in str(bannedRoles.keys()) or name in bannedRoles.values():
             await interaction.edit_original_response(content=f"I cannot give you the role **{name}** it is forbidden!", allowed_mentions=False)
             print(f'Role {name} is forbidden')
             return
@@ -394,7 +395,7 @@ def getColor(color: str):
 
 def getBannedRoles(interaction: discord.Interaction) -> dict:
     bannedRoles = {}
-    customRoleDividerName = 'Tylerrrrrr'
+    customRoleDividerName = 'TymlerBot'
     customRoleFlag = False
     for role in interaction.guild.roles:
         if role.name == customRoleDividerName:
