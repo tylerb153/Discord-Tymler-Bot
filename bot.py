@@ -116,7 +116,7 @@ roleGroup = app_commands.Group(name='role', description='Manages user roles')
 async def add(interaction: discord.Interaction, name: str, color: str = ""):
     await interaction.response.defer(ephemeral=True)
     color = getColor(color)
-    customRoleDividerName = "Tylerrrrrr"
+    customRoleDividerName = "TymlerBot" #Look at making this dynamic
     nameStripped = name.strip('@&<>')
 
     if name == '@everyone':
