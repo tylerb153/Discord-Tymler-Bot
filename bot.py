@@ -485,7 +485,7 @@ async def on_voice_state_update(member, before, after):
             await after.channel.connect(timeout=30, reconnect=True)
             botVC = after.channel.guild.voice_client
             loadOpus()
-            botVC.play(discord.PCMVolumeTransformer(FFmpegPCMAudio('CentennialMarchIntro.mp3'), volume=0.25), after=lambda e: asyncio.run_coroutine_threadsafe(botVC.disconnect(), client.loop))
+            botVC.play(discord.PCMVolumeTransformer(FFmpegPCMAudio('Fanfare for a Clown.mp3'), volume=0.25), after=lambda e: asyncio.run_coroutine_threadsafe(botVC.disconnect(), client.loop))
 
         if before.channel != None and client.user in before.channel.members:
             botVC = before.channel.guild.voice_client
