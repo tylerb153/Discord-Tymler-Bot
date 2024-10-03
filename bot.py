@@ -110,12 +110,25 @@ async def stop(interaction: discord.Interaction):
 
 @adminGroup.command(name='disconnect', description='Disconnects the bot from the voice channel')
 async def disconnect(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
     try:
         botVC: discord.VoiceClient = interaction.guild.voice_client
         await botVC.disconnect()
     except Exception as e:
         print(f'Exception occured in disconnect()\n{e}')
+    await interaction.delete_original_response()
 
+@adminGroup.command(name='set_status', description='Sets the status of the bot')
+async def set_status(interaction: discord.Interaction, status: str):
+    await interaction.response.defer(ephemeral=True)
+    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.custom, name="The Minecraft Cult", state=status))
+    await interaction.delete_original_response()
+
+@adminGroup.command(name='play_sound', description='Plays a sound from the SoundEffects folder')
+async def play_sound(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    await playRandomSound(interaction.user.voice.channel)
+    await interaction.delete_original_response()
 
 roleGroup = app_commands.Group(name='role', description='Manages user roles')
 
@@ -443,6 +456,27 @@ def loadOpus():
     elif platform.system() == 'Linux':
         discord.opus.load_opus('libopus.so.0')
 
+def getSounds(folderPath: str, soundList: list) -> list:
+    for i in os.listdir(folderPath):
+        fullPath = os.path.join(folderPath, i)
+        if os.path.isfile(fullPath):
+            soundList.append(fullPath)
+        else:
+            getSounds(fullPath, soundList)
+        
+    return soundList
+
+async def playRandomSound(channel: discord.VoiceChannel):
+    loadOpus()
+    sounds = getSounds('SoundEffects/', [])
+    randomSound = random.choice(sounds)
+    if channel.guild.voice_client != None and channel.guild.voice_client.is_connected():
+        botVC = channel.guild.voice_client
+    else:
+        await channel.connect(timeout=30, reconnect=True)
+        botVC = channel.guild.voice_client
+    botVC.play(FFmpegPCMAudio(randomSound), after=lambda e: asyncio.run_coroutine_threadsafe(botVC.disconnect(), client.loop))
+
 ## Detect when user enters vc ## 
 @client.event
 async def on_voice_state_update(member, before, after):
@@ -457,8 +491,42 @@ async def on_voice_state_update(member, before, after):
             botVC = before.channel.guild.voice_client
             botVC.stop()
             await botVC.disconnect()
+    
+    if before.channel != None and after.channel == None and client.user in before.channel.members and before.channel.guild.voice_client != None:
+        botVC = before.channel.guild.voice_client
+        botVC.stop()
+        await botVC.disconnect()
+
+async def changeStatus():
+    with open('statuses.txt', 'r') as file:
+        statuses = file.readlines()
+        randomStatus = random.choice(statuses).strip()
+        await client.change_presence(activity=discord.Activity(type=discord.ActivityType.custom, name="The Minecraft Cult", state=randomStatus))
 
  
+## Play Random Sounds ##
+async def playRandomSoundLoop():
+    while not client.is_closed():
+        await asyncio.sleep(random.randint(10, 3600))
+        print("Playing random sound")
+        for guild in client.guilds:
+            activeVoiceChannels = [vc for vc in guild.voice_channels if len(vc.members) > 0]
+            if activeVoiceChannels:
+                randomChannel = random.choice(activeVoiceChannels)
+                await playRandomSound(randomChannel)
+
+async def changeStatusLoop():
+    while not client.is_closed():
+        await asyncio.sleep(random.randint(10, 3600))
+        print("Changing status")
+        await changeStatus()
+
+@client.event
+async def on_connect():
+    print("Connected")
+    client.loop.create_task(playRandomSoundLoop())
+    client.loop.create_task(changeStatusLoop())
+
 ## Run Discord Client ##
 @client.event
 async def on_ready():
@@ -469,7 +537,10 @@ async def on_ready():
     # tree.add_command(mediaGroup)
     tree.add_command(adminGroup)
     await tree.sync()
+    await changeStatus()
     print("Ready")
+
+
 
 client.run(TOKEN)
 
