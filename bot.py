@@ -108,6 +108,13 @@ async def stop(interaction: discord.Interaction):
         print(f'An error occured in the stop command with error:\n{e}')
         await interaction.edit_original_response(content=f"<@{tylerUserID}> I couldn't stop the server for you :sob:")
 
+@adminGroup.command(name='disconnect', description='Disconnects the bot from the voice channel')
+async def disconnect(interaction: discord.Interaction):
+    try:
+        botVC: discord.VoiceClient = interaction.guild.voice_client
+        await botVC.disconnect()
+    except Exception as e:
+        print(f'Exception occured in disconnect()\n{e}')
 
 
 roleGroup = app_commands.Group(name='role', description='Manages user roles')
@@ -430,11 +437,28 @@ def getServerRunning() -> bool:
         print(f'Exeption occured while running ssh command in getServerRunning()\n{e}')
         raise e
 
-
-
+def loadOpus():
+    if platform.system() == 'Darwin':
+                discord.opus.load_opus('/opt/homebrew/Cellar/opus/1.5.1/lib/libopus.0.dylib')
+    elif platform.system() == 'Linux':
+        discord.opus.load_opus('libopus.so.0')
 
 ## Detect when user enters vc ## 
+@client.event
+async def on_voice_state_update(member, before, after):
+    if member.id == tylerUserID:
+        if after.channel != None and before.channel == None:
+            await after.channel.connect(timeout=30, reconnect=True)
+            botVC = after.channel.guild.voice_client
+            loadOpus()
+            botVC.play(discord.PCMVolumeTransformer(FFmpegPCMAudio('CentennialMarchIntro.mp3'), volume=0.25), after=lambda e: asyncio.run_coroutine_threadsafe(botVC.disconnect(), client.loop))
 
+        if before.channel != None and client.user in before.channel.members:
+            botVC = before.channel.guild.voice_client
+            botVC.stop()
+            await botVC.disconnect()
+
+ 
 ## Run Discord Client ##
 @client.event
 async def on_ready():
