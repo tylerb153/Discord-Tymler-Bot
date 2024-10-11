@@ -1,5 +1,6 @@
 import asyncio
 import time
+from typing import Optional
 import discord
 from discord import app_commands
 from discord import FFmpegPCMAudio
@@ -466,16 +467,58 @@ def getSounds(folderPath: str, soundList: list) -> list:
         
     return soundList
 
+async def setDefaultAvatar(guild: Optional[discord.Guild] = None):
+    with open('Profile Pictures/default.png', 'rb') as img:
+        avatar = img.read()
+    try:
+        await client.user.edit(avatar=avatar)
+    except:
+        print('Failed to set avatar')
+    await guild.me.edit(nick='Tymler')
+
+
+def getSpecialAvatar(sound: str) -> tuple[Optional[str], Optional[bytearray]]:
+    nickname = None
+    avatarStr = None
+    match sound:
+        case 'SoundEffects/Minecraft Movie/I..... AM STEVE.mp3':
+            avatarStr = 'Profile Pictures/Steeeve.png'
+            nickname = 'Steve'
+        case 'SoundEffects/Minecraft Movie/Minecraft Movie Sheep.mp3':
+            avatarStr = 'Profile Pictures/Sheep.png'
+            nickname = 'Sheep'
+        
+    with open(avatarStr, 'rb') as img:
+        avatar = img.read()
+    return [nickname, avatar]
+
 async def playRandomSound(channel: discord.VoiceChannel):
     loadOpus()
     sounds = getSounds('SoundEffects/', [])
+    # sounds = ['SoundEffects/Minecraft Movie/I..... AM STEVE.mp3', 'SoundEffects/Minecraft Movie/Minecraft Movie Sheep.mp3']
     randomSound = random.choice(sounds)
+    nickname, avatar = getSpecialAvatar(randomSound)
+    if nickname != None:
+        try:
+            await client.user.edit(avatar=avatar)
+        except:
+            print('Failed to set avatar')
+        await channel.guild.me.edit(nick=nickname)
+
     if channel.guild.voice_client != None and channel.guild.voice_client.is_connected():
         botVC = channel.guild.voice_client
     else:
         await channel.connect(timeout=30, reconnect=True)
         botVC = channel.guild.voice_client
-    botVC.play(FFmpegPCMAudio(randomSound), after=lambda e: asyncio.run_coroutine_threadsafe(botVC.disconnect(), client.loop))
+    
+    if nickname != None:
+        async def cleanup():
+            await botVC.disconnect()
+            await setDefaultAvatar(channel.guild)
+        botVC.play(FFmpegPCMAudio(randomSound), after=lambda e: client.loop.create_task(cleanup()))
+
+    else:
+        botVC.play(FFmpegPCMAudio(randomSound), after=lambda e: asyncio.run_coroutine_threadsafe(botVC.disconnect(), client.loop))
 
 ## Detect when user enters vc ## 
 @client.event
@@ -538,6 +581,7 @@ async def on_ready():
     tree.add_command(adminGroup)
     await tree.sync()
     await changeStatus()
+    await setDefaultAvatar(client.guilds[0])
     print("Ready")
 
 
