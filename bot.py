@@ -328,8 +328,15 @@ async def pause(interaction: discord.Interaction):
         print(f'Could not pause audio in {interaction.guild.name}: {interaction.guild.id}\n{e}')
 
 #TODO - Skip functionality (will probably require a queue system instead)
-        
+
+mentionGroup = app_commands.Group(name='random', description='"@" a random person in the discord server')
+@mentionGroup.command(name='mention', description='"@" a random person in the discord server')
+async def mention(interaction: discord.Interaction):
+    await interaction.response.defer()
+    chosenPerson = random.choice(interaction.guild.members)
+    await interaction.edit_original_response(content=f'{chosenPerson.mention}')
     
+
 ## Helper Functions ##
 def getColor(color: str):
     color = color.strip('#')
@@ -560,6 +567,7 @@ async def on_ready():
     tree.add_command(roleGroup)
     # tree.add_command(mediaGroup)
     tree.add_command(adminGroup)
+    tree.add_command(mentionGroup)
     await tree.sync()
     await changeStatus()
     print("Ready")
