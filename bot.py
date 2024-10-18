@@ -528,6 +528,17 @@ async def on_voice_state_update(member, before, after):
         botVC.stop()
         await botVC.disconnect()
 
+## Detect when a member is updated ##
+@client.event
+async def on_member_update(before, after):
+    if before.nick != after.nick:
+        await after.guild.get_channel(785666938276675624).send(content=f'{after.mention} :eyes:')
+        await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f'{after.nick} change thier name.', state=f'👀👀👀👀'))
+    
+## Detect when a message is sent ##
+# @client.event
+# async def on_message(message):
+
 async def changeStatus():
     with open('statuses.txt', 'r') as file:
         statuses = file.readlines()
