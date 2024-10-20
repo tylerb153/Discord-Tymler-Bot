@@ -531,7 +531,7 @@ async def on_voice_state_update(member, before, after):
 ## Detect when a member is updated ##
 @client.event
 async def on_member_update(before, after):
-    if before.nick != after.nick:
+    if after != client.user and before.nick != after.nick:
         await after.guild.get_channel(785666938276675624).send(content=f'{after.mention} :eyes:')
         await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f'{after.nick} change thier name.', state=f'👀👀👀👀'))
     
