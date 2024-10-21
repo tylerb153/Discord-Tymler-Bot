@@ -536,8 +536,37 @@ async def on_member_update(before, after):
         await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f'{after.nick} change thier name.', state=f'👀👀👀👀'))
     
 ## Detect when a message is sent ##
-# @client.event
-# async def on_message(message):
+@client.event
+async def on_message(message):
+    # print(message)
+    if message.author == client.user:
+        return
+
+    messages = message.content.split(" ")
+    userString = ""
+    messageChanged = False
+    for word in messages:
+        def removeY(word) -> str:
+            nonlocal messageChanged    
+            if word.endswith('y'):
+                word = word[:-1] + 'ie'
+                messageChanged = True
+            if word.endswith('Y'):
+                word = word[:-1] + 'IE'
+                messageChanged = True
+            return word
+        def removePunctuationThenConvert(word: str) -> str:
+            punctuation = '*~`!@#$%^&()_+={}[]|\\;\'"<>,?/.-'
+            if word[-1] in punctuation:
+                return removePunctuationThenConvert(word[:-1]) + word[-1]
+            else:
+                return removeY(word)
+        word = removePunctuationThenConvert(word)
+            
+        userString += word + " "
+    if messageChanged:
+        await message.delete()
+        await message.channel.send(userString + f" - {message.author.mention}")
 
 async def changeStatus():
     with open('statuses.txt', 'r') as file:
