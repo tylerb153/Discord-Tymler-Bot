@@ -77,8 +77,8 @@ async def status(interaction: discord.Interaction):
 @serverGroup.command(name="start", description="If the minecraft server is down start it.")
 async def start(interaction: discord.Interaction):
     await interaction.response.defer()
-    await interaction.edit_original_response(content="There is no active Minecraft server at this time the Minecraft Cult 2.5 server is shut down.")
-    return
+    # await interaction.edit_original_response(content="There is no active Minecraft server at this time the Minecraft Cult 2.5 server is shut down.")
+    # return
     try:
         if getServerRunning():
             await interaction.edit_original_response(content="The server is already running, use **/server status** to check 😜")
