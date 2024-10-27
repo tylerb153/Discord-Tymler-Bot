@@ -1,3 +1,5 @@
+#!/bin/python3
+
 import asyncio
 import time
 from typing import Optional
@@ -561,12 +563,17 @@ async def on_message(message):
                 return removePunctuationThenConvert(word[:-1]) + word[-1]
             else:
                 return removeY(word)
-        word = removePunctuationThenConvert(word)
+        if "y" in word or "Y" in word:
+            word = removePunctuationThenConvert(word)
             
         userString += word + " "
+        
     if messageChanged:
         await message.delete()
-        await message.channel.send(userString + f" - {message.author.mention}")
+        if message.type == discord.MessageType.reply:
+            await (await message.channel.fetch_message(message.reference.message_id)).reply(content=userString + f" - {message.author.mention}")
+        else:
+            await message.channel.send(userString + f" - {message.author.mention}")
 
 async def changeStatus():
     with open('statuses.txt', 'r') as file:
