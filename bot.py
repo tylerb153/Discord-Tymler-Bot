@@ -636,6 +636,7 @@ async def on_ready():
     # tree.add_command(mediaGroup)
     tree.add_command(adminGroup)
     tree.add_command(mentionGroup)
+    tree.add_command(jacobGroup)
     await tree.sync()
     await changeStatus()
     print("Ready")
