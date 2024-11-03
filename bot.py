@@ -90,6 +90,27 @@ async def start(interaction: discord.Interaction):
         print(f'An error occured in the start command with error:\n{e}')
         await interaction.edit_original_response(content=f"<@{tylerUserID}> I couldn't start the server :sob:")
 
+
+JacobGroup = app_commands.Group(name="Jacob", description="Commands for Jacob")
+@JacobGroup.command(name="HUH", description="HUH")
+async def HUH(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    try:    
+        if (getServerRunning()):
+            with MCRcon(os.getenv('MINECRAFT_SERVER_IP_ADDRESS'), os.getenv('RCON_PASSWORD')) as mcr:
+                resp = mcr.command('/title @a subtitle "HUH?!"')
+                print(resp)
+            with MCRcon(os.getenv('MINECRAFT_SERVER_IP_ADDRESS'), os.getenv('RCON_PASSWORD')) as mcr: 
+                resp = mcr.command('/title @a title "HUH?!"')
+                print(resp)
+        else:
+            raise Exception('Huh no worky')
+    except Exception as e:
+        print(f'An error occured in the HUH command with error:\n{e}')
+    
+    await interaction.delete_original_response()
+
+
 adminGroup = app_commands.Group(name="admin", description="Commands that only the admins can use")
 @adminGroup.command(name="stop", description="If the minecraft server is running stop it.")
 async def stop(interaction: discord.Interaction):
@@ -106,7 +127,7 @@ async def stop(interaction: discord.Interaction):
                 print(resp)
                 resp = mcr.command("stop")
                 print(resp)
-            await interaction.edit_original_response(content="The server has stopping!")
+            await interaction.edit_original_response(content="The server has stopped!")
     except Exception as e:
         print(f'An error occured in the stop command with error:\n{e}')
         await interaction.edit_original_response(content=f"<@{tylerUserID}> I couldn't stop the server for you :sob:")
