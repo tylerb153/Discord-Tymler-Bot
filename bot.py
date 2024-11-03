@@ -92,8 +92,8 @@ async def start(interaction: discord.Interaction):
 
 
 jacobGroup = app_commands.Group(name="jacob", description="Commands for Jacob")
-@jacobGroup.command(name="HUH", description="HUH")
-async def HUH(interaction: discord.Interaction):
+@jacobGroup.command(name="huh", description="HUH")
+async def huh(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     try:    
         if (getServerRunning()):
