@@ -91,8 +91,8 @@ async def start(interaction: discord.Interaction):
         await interaction.edit_original_response(content=f"<@{tylerUserID}> I couldn't start the server :sob:")
 
 
-JacobGroup = app_commands.Group(name="Jacob", description="Commands for Jacob")
-@JacobGroup.command(name="HUH", description="HUH")
+jacobGroup = app_commands.Group(name="jacob", description="Commands for Jacob")
+@jacobGroup.command(name="HUH", description="HUH")
 async def HUH(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     try:    
