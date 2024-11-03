@@ -92,21 +92,21 @@ async def start(interaction: discord.Interaction):
 
 
 jacobGroup = app_commands.Group(name="jacob", description="Commands for Jacob")
-@jacobGroup.command(name="huh", description="HUH")
-async def huh(interaction: discord.Interaction):
+@jacobGroup.command(name="skitzing", description="Title and subtitle for minecraft server... HUH?!")
+async def skitzing(interaction: discord.Interaction, title: str, subtitle: str = ""):
     await interaction.response.defer(ephemeral=True)
     try:    
         if (getServerRunning()):
             with MCRcon(os.getenv('MINECRAFT_SERVER_IP_ADDRESS'), os.getenv('RCON_PASSWORD')) as mcr:
-                resp = mcr.command('/title @a subtitle "HUH?!"')
+                resp = mcr.command(f'/title @a subtitle "{subtitle}"')
                 print(resp)
             with MCRcon(os.getenv('MINECRAFT_SERVER_IP_ADDRESS'), os.getenv('RCON_PASSWORD')) as mcr: 
-                resp = mcr.command('/title @a title "HUH?!"')
+                resp = mcr.command(f'/title @a title "{title}"')
                 print(resp)
         else:
-            raise Exception('Huh no worky')
+            raise Exception('jacob call no worky')
     except Exception as e:
-        print(f'An error occured in the HUH command with error:\n{e}')
+        print(f'An error occured in the skitzing command with error:\n{e}')
     
     await interaction.delete_original_response()
 
@@ -153,6 +153,24 @@ async def play_sound(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     await playRandomSound(interaction.user.voice.channel)
     await interaction.delete_original_response()
+
+@adminGroup.command(name="op", description="Gives user operator privliges")
+async def op(interaction: discord.Interaction, username: str):
+    await interaction.response.defer(ephemeral=True)
+    resp = ""
+    try:    
+        if (getServerRunning()):
+            with MCRcon(os.getenv('MINECRAFT_SERVER_IP_ADDRESS'), os.getenv('RCON_PASSWORD')) as mcr:
+                resp = mcr.command(f'/op {username}')
+                await interaction.edit_original_response(content=resp)
+        else:
+            raise Exception('There is a problem with the minecraft server or op command')
+    except Exception as e:
+        print(f'An error occured in the op command with error:\n{e}')
+        await interaction.edit_original_response(content=f"I couldn't give operator privliges to {username} :sob:")
+    
+    
+    
 
 roleGroup = app_commands.Group(name='role', description='Manages user roles')
 
