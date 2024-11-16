@@ -132,6 +132,21 @@ async def stop(interaction: discord.Interaction):
         print(f'An error occured in the stop command with error:\n{e}')
         await interaction.edit_original_response(content=f"<@{tylerUserID}> I couldn't stop the server for you :sob:")
 
+@adminGroup.command(name='backup', description='Backs up the minecraft server')
+async def backup(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    try:
+        if getServerRunning():
+            ssh_command = ['ssh', f'{os.getenv("SSH_USERNAME")}@{os.getenv("SSH_HOSTNAME")}', f'sudo bash {os.getenv("SSH_SCRIPT_PATH")}/serverSave.sh']
+            subprocess.run(ssh_command, capture_output=False, text=True)
+            await interaction.edit_original_response(content="The server is saving!")
+        else:
+            await interaction.edit_original_response(content="The server not running so it won't be backed up!")
+    except Exception as e:
+        print(f'An error occured in the backup command with error:\n{e}')
+        await interaction.edit_original_response(content=f"<@{tylerUserID}> I couldn't backup the server :sob:")
+
+
 @adminGroup.command(name='disconnect', description='Disconnects the bot from the voice channel')
 async def disconnect(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
@@ -597,7 +612,7 @@ async def on_message(message):
                 messageChanged = True
             return word
         def removePunctuationThenConvert(word: str) -> str:
-            punctuation = '*~`!@#$%^&()_+={}[]|\\;\'"<>,?/.-'
+            punctuation = '*~`!@#$%^&()_+={}[]|\\;\'"<>,?/.-1234567890'
             if word[-1] in punctuation:
                 return removePunctuationThenConvert(word[:-1]) + word[-1]
             else:
@@ -624,7 +639,7 @@ async def changeStatus():
 ## Play Random Sounds ##
 async def playRandomSoundLoop():
     while not client.is_closed():
-        await asyncio.sleep(random.randint(10, 3600))
+        await asyncio.sleep(random.randint(10, 7200))
         print("Playing random sound")
         for guild in client.guilds:
             activeVoiceChannels = [vc for vc in guild.voice_channels if len(vc.members) > 0]
