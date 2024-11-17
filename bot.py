@@ -137,7 +137,7 @@ async def backup(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     try:
         if getServerRunning():
-            ssh_command = ['ssh', f'{os.getenv("SSH_USERNAME")}@{os.getenv("SSH_HOSTNAME")}', f'sudo -n bash {os.getenv("SSH_SCRIPT_PATH")}/serverSave.sh']
+            ssh_command = ['ssh', f'{os.getenv("SSH_USERNAME")}@{os.getenv("SSH_HOSTNAME")}', f'echo {os.getenv("SSH_PASSWORD")} | sudo -S bash {os.getenv("SSH_SCRIPT_PATH")}/serverSave.sh']
             subprocess.run(ssh_command, capture_output=False, text=True)
             await interaction.edit_original_response(content="The server is saving!")
         else:
