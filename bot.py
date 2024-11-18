@@ -39,9 +39,9 @@ async def whitelist(interaction: discord.Interaction, username: str):
                 resp = mcr.command("/whitelist add " + username)
                 print(resp)
                 if 'whitelisted' in resp:
-                    finalmsg = f'{username} is already whitelisted'
+                    finalmsg = f'**{username}** is already whitelisted'
                 elif 'not exist' in resp:
-                    finalmsg = f'{username} does not exist please double check your username or kill Microsoft'
+                    finalmsg = f'**{username}** does not exist please double check your username or kill Microsoft'
                     await dmTyler(f'Microsoft sucks so **{username}** apparently doesn\'t exist. Please fix or people will YELL at you 😰')
             await interaction.user.add_roles(discord.utils.get(interaction.user.guild.roles, name="Cult 3.0 Members"))
         else:
