@@ -28,25 +28,28 @@ tylerUserID = 336959815374864384 #Used in multiple commands
 
 
 @tree.command(name='whitelist', description='Add your minecraft username to the whitelist')
-
 async def whitelist(interaction: discord.Interaction, username: str):
     await interaction.response.defer()
     print(username)
     finalmsg = f'{username} was added to the whitelist' #adds usrname and has been added to the varible finalmsg
- 
-    try:    
-        if (getServerRunning()):
+    try:
+        # raise Exception("Testing wooooo")
+        if (await getServerRunning()):
             with MCRcon(os.getenv('MINECRAFT_SERVER_IP_ADDRESS'), os.getenv('RCON_PASSWORD')) as mcr: #send the whitelist command to minecraft server
                 resp = mcr.command("/whitelist add " + username)
                 print(resp)
                 if 'whitelisted' in resp:
                     finalmsg = f'{username} is already whitelisted'
+                elif 'not exist' in resp:
+                    finalmsg = f'{username} does not exist please double check your username or kill Microsoft'
+                    await dmTyler(f'Microsoft sucks so **{username}** apparently doesn\'t exist. Please fix or people will YELL at you 😰')
             await interaction.user.add_roles(discord.utils.get(interaction.user.guild.roles, name="Cult 3.0 Members"))
         else:
             raise Exception('The minecraft server may not be running')
     except Exception as e:
+        await dmTyler(f'An error occured in the whitelist command with error:\n{e}')
         print(f'An error occured in the whitelist command with error:\n{e}')
-        finalmsg = f'<@{tylerUserID}> I couldn\'t add {username} :sob:'
+        finalmsg = f'I couldn\'t add **{username}** :sob: and have notified <@{tylerUserID}>'
 
     await interaction.edit_original_response(content=finalmsg)
         
@@ -69,9 +72,12 @@ async def status(interaction: discord.Interaction):
             await interaction.edit_original_response(content=f":green_circle: The Minecraft Cult Server is online with {json_data['players']['online']} players connected!")
         else:
             print("Server offline")
-            await interaction.edit_original_response(content=f":red_circle: <@{tylerUserID}> The Minecraft Cult Server is Offline! :(")
+            if not interaction.user.id == tylerUserID:
+                await dmTyler(":rotating_light: The Minecraft Cult Server is Offline! WEEE WOOO WEEE WOOO :rotating_light:")
+            await interaction.edit_original_response(content=f":red_circle: The Minecraft Cult Server is Offline! :(")
     else:
         print(f"API call to {url} failed with status code {response.status_code}.")
+        await dmTyler(f"API call to {url} failed with status code {response.status_code}.")
         await interaction.edit_original_response(content=":warning: Could not check for online status")
 
 @serverGroup.command(name="start", description="If the minecraft server is down start it.")
@@ -88,6 +94,7 @@ async def start(interaction: discord.Interaction):
             await interaction.edit_original_response(content="The server is starting please don't panic and cry!")
     except Exception as e:
         print(f'An error occured in the start command with error:\n{e}')
+        await dmTyler(f'An error occured in the start command with error:\n{e}')
         await interaction.edit_original_response(content=f"<@{tylerUserID}> I couldn't start the server :sob:")
 
 
@@ -107,6 +114,7 @@ async def skitzing(interaction: discord.Interaction, title: str, subtitle: str =
             raise Exception('jacob call no worky')
     except Exception as e:
         print(f'An error occured in the skitzing command with error:\n{e}')
+        await dmTyler(f'An error occured in the skitzing command with error:\n{e}')
     
     await interaction.delete_original_response()
 
@@ -130,6 +138,7 @@ async def stop(interaction: discord.Interaction):
             await interaction.edit_original_response(content="The server has stopped!")
     except Exception as e:
         print(f'An error occured in the stop command with error:\n{e}')
+        await dmTyler(f'An error occured in the stop command with error:\n{e}')
         await interaction.edit_original_response(content=f"<@{tylerUserID}> I couldn't stop the server for you :sob:")
 
 @adminGroup.command(name='backup', description='Backs up the minecraft server')
@@ -144,6 +153,7 @@ async def backup(interaction: discord.Interaction):
             await interaction.edit_original_response(content="The server not running so it won't be backed up!")
     except Exception as e:
         print(f'An error occured in the backup command with error:\n{e}')
+        await dmTyler(f'An error occured in the backup command with error:\n{e}')
         await interaction.edit_original_response(content=f"<@{tylerUserID}> I couldn't backup the server :sob:")
 
 
@@ -155,6 +165,7 @@ async def disconnect(interaction: discord.Interaction):
         await botVC.disconnect()
     except Exception as e:
         print(f'Exception occured in disconnect()\n{e}')
+        await dmTyler(f'Exception occured in disconnect()\n{e}')
     await interaction.delete_original_response()
 
 @adminGroup.command(name='set_status', description='Sets the status of the bot')
@@ -182,6 +193,7 @@ async def op(interaction: discord.Interaction, username: str):
             raise Exception('There is a problem with the minecraft server or op command')
     except Exception as e:
         print(f'An error occured in the op command with error:\n{e}')
+        await dmTyler(f'An error occured in the op command with error:\n{e}')
         await interaction.edit_original_response(content=f"I couldn't give operator privliges to {username} :sob:")
     
     
@@ -494,11 +506,13 @@ def extractInfo(ydl, url):
 def playAudio(botVC: discord.VoiceClient, url):
     botVC.play(FFmpegPCMAudio(source=url))
 
-def getServerRunning() -> bool:
+async def getServerRunning() -> bool:
     ssh_command = ['ssh', f'{os.getenv("SSH_USERNAME")}@{os.getenv("SSH_HOSTNAME")}', f'bash {os.getenv("SSH_SCRIPT_PATH")}/serverStatus.sh']
 
     try:
+        # raise Exception("Testing wooooo")
         result = subprocess.run(ssh_command, capture_output=True, text=True)
+        print(result)
 
         output = (result.stdout).strip('\n')
         error = result.stderr
@@ -512,6 +526,7 @@ def getServerRunning() -> bool:
 
     except Exception as e:
         print(f'Exeption occured while running ssh command in getServerRunning()\n{e}')
+        await dmTyler(f'Exeption occured while running ssh command in getServerRunning()\n{e}')
         raise e
 
 def loadOpus():
@@ -563,6 +578,15 @@ async def playRandomSound(channel: discord.VoiceChannel):
 
     else:
         botVC.play(FFmpegPCMAudio(randomSound), after=lambda e: asyncio.run_coroutine_threadsafe(botVC.disconnect(), client.loop))
+
+async def dmTyler(message: str):
+    try:
+        channel = await client.create_dm(discord.Object(id=tylerUserID))
+        await channel.send(content=message)
+    except Exception as e:
+        print(f'Could not dm Tyler: \n{e}')
+
+## End of Helper Functions ##
 
 ## Detect when user enters vc ## 
 @client.event
