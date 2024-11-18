@@ -123,6 +123,9 @@ adminGroup = app_commands.Group(name="admin", description="Commands that only th
 @adminGroup.command(name="stop", description="If the minecraft server is running stop it.")
 async def stop(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
+    if not interaction.user.id == tylerUserID:
+        await interaction.edit_original_response(content="You do not have permission to use this command")
+        return
     try:
         if not getServerRunning():
             await interaction.edit_original_response(content="The server is already stopped")
@@ -144,6 +147,9 @@ async def stop(interaction: discord.Interaction):
 @adminGroup.command(name='backup', description='Backs up the minecraft server')
 async def backup(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
+    if not interaction.user.id == tylerUserID:
+        await interaction.edit_original_response(content="You do not have permission to use this command")
+        return
     try:
         if getServerRunning():
             ssh_command = ['ssh', f'{os.getenv("SSH_USERNAME")}@{os.getenv("SSH_HOSTNAME")}', f'nohup echo {os.getenv("SSH_PASSWORD")} | sudo -S bash {os.getenv("SSH_SCRIPT_PATH")}/serverSave.sh > /dev/null 2>&1 &']
@@ -160,6 +166,9 @@ async def backup(interaction: discord.Interaction):
 @adminGroup.command(name='disconnect', description='Disconnects the bot from the voice channel')
 async def disconnect(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
+    if not interaction.user.id == tylerUserID:
+        await interaction.edit_original_response(content="You do not have permission to use this command")
+        return
     try:
         botVC: discord.VoiceClient = interaction.guild.voice_client
         await botVC.disconnect()
@@ -170,12 +179,18 @@ async def disconnect(interaction: discord.Interaction):
 
 @adminGroup.command(name='set_status', description='Sets the status of the bot')
 async def set_status(interaction: discord.Interaction, status: str):
+    if not interaction.user.id == tylerUserID:
+        await interaction.edit_original_response(content="You do not have permission to use this command")
+        return
     await interaction.response.defer(ephemeral=True)
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.custom, name="The Minecraft Cult", state=status))
     await interaction.delete_original_response()
 
 @adminGroup.command(name='play_sound', description='Plays a sound from the SoundEffects folder')
 async def play_sound(interaction: discord.Interaction):
+    if not interaction.user.id == tylerUserID:
+        await interaction.edit_original_response(content="You do not have permission to use this command")
+        return
     await interaction.response.defer(ephemeral=True)
     await playRandomSound(interaction.user.voice.channel)
     await interaction.delete_original_response()
@@ -183,6 +198,9 @@ async def play_sound(interaction: discord.Interaction):
 @adminGroup.command(name="op", description="Gives user operator privliges")
 async def op(interaction: discord.Interaction, username: str):
     await interaction.response.defer(ephemeral=True)
+    if not interaction.user.id == tylerUserID:
+        await interaction.edit_original_response(content="You do not have permission to use this command")
+        return
     resp = ""
     try:    
         if (getServerRunning()):
