@@ -86,7 +86,7 @@ async def start(interaction: discord.Interaction):
     # await interaction.edit_original_response(content="There is no active Minecraft server at this time the Minecraft Cult 2.5 server is shut down.")
     # return
     try:
-        if getServerRunning():
+        if await getServerRunning():
             await interaction.edit_original_response(content="The server is already running, use **/server status** to check 😜")
         else:
             ssh_command = ['ssh', f'{os.getenv("SSH_USERNAME")}@{os.getenv("SSH_HOSTNAME")}', f'nohup bash {os.getenv("SSH_SCRIPT_PATH")}/serverStart.sh > /dev/null 2>&1 &']
@@ -103,7 +103,7 @@ jacobGroup = app_commands.Group(name="jacob", description="Commands for Jacob")
 async def skitzing(interaction: discord.Interaction, title: str, subtitle: str = ""):
     await interaction.response.defer(ephemeral=True)
     try:    
-        if (getServerRunning()):
+        if (await getServerRunning()):
             with MCRcon(os.getenv('MINECRAFT_SERVER_IP_ADDRESS'), os.getenv('RCON_PASSWORD')) as mcr:
                 resp = mcr.command(f'/title @a subtitle "{subtitle}"')
                 print(resp)
@@ -127,7 +127,7 @@ async def stop(interaction: discord.Interaction):
         await interaction.edit_original_response(content="You do not have permission to use this command")
         return
     try:
-        if not getServerRunning():
+        if not await getServerRunning():
             await interaction.edit_original_response(content="The server is already stopped")
         else:
             with MCRcon(os.getenv('MINECRAFT_SERVER_IP_ADDRESS'), os.getenv('RCON_PASSWORD')) as mcr:
@@ -151,7 +151,7 @@ async def backup(interaction: discord.Interaction):
         await interaction.edit_original_response(content="You do not have permission to use this command")
         return
     try:
-        if getServerRunning():
+        if await getServerRunning():
             ssh_command = ['ssh', f'{os.getenv("SSH_USERNAME")}@{os.getenv("SSH_HOSTNAME")}', f'nohup echo {os.getenv("SSH_PASSWORD")} | sudo -S bash {os.getenv("SSH_SCRIPT_PATH")}/serverSave.sh > /dev/null 2>&1 &']
             subprocess.run(ssh_command, capture_output=False, text=True)
             await interaction.edit_original_response(content="The server is saving!")
@@ -203,7 +203,7 @@ async def op(interaction: discord.Interaction, username: str):
         return
     resp = ""
     try:    
-        if (getServerRunning()):
+        if (await getServerRunning()):
             with MCRcon(os.getenv('MINECRAFT_SERVER_IP_ADDRESS'), os.getenv('RCON_PASSWORD')) as mcr:
                 resp = mcr.command(f'/op {username}')
                 await interaction.edit_original_response(content=resp)
