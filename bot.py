@@ -636,10 +636,14 @@ async def on_member_update(before, after):
 ## Detect when a message is sent ##
 @client.event
 async def on_message(message):
-    # print(message)
+    print(message)
     if message.author == client.user:
         return
+    meMentioned = False
+    if client.user in message.mentions:
+        meMentioned = True
 
+    ## Process message to change 'y' to 'ie' ##
     messages = message.content.split(" ")
     userString = ""
     messageChanged = False
@@ -667,9 +671,16 @@ async def on_message(message):
     if messageChanged:
         await message.delete()
         if message.type == discord.MessageType.reply:
-            await (await message.channel.fetch_message(message.reference.message_id)).reply(content=userString + f" - {message.author.mention}")
+            message = await (await message.channel.fetch_message(message.reference.message_id)).reply(content=userString + f" - {message.author.mention}")
         else:
-            await message.channel.send(userString + f" - {message.author.mention}")
+            message = await message.channel.send(userString + f" - {message.author.mention}")
+
+    if meMentioned:
+        with open('mentionResponses.txt', 'r') as file:
+            responses = file.readlines()
+            randomResponse = random.choice(responses).strip()
+            await message.reply(content=f'{randomResponse}')
+
 
 async def changeStatus():
     with open('statuses.txt', 'r') as file:
