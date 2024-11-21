@@ -120,13 +120,15 @@ class DatabaseManager:
         user = User(response[0][0], response[0][1], response[0][2], userLoot )
         return user
     
-    def createAttack(self, attackingUser: User, defendingUser: User, Type: str, attackDescription: str):
+    def createAttack(self, attackingUser: User, defendingUser: User, Type: str, attackDescription: str) -> Attack:
         self.cursor.execute(f"INSERT INTO Attack (AttackingUserID, DefendingUserID, Type, Description) VALUES ({attackingUser.UserID}, {defendingUser.UserID}, '{Type}', '{attackDescription}')")
         self.connection.commit()
+        return self.getAttack(self.cursor.lastrowid)
 
     def completeAttack(self, attack: Attack, winner: User): 
         self.cursor.execute(f"UPDATE Attack SET Complete = True WHERE AttackID = {attack.AttackID}")
-        self.cursor.execute(f"UPDATE Attack SET Winner = {winner.UserID} WHERE AttackID = {attack.AttackID}")
+        if winner:
+            self.cursor.execute(f"UPDATE Attack SET Winner = {winner.UserID} WHERE AttackID = {attack.AttackID}")
         self.connection.commit()
     
     def getAttack(self, attackID: int) -> Attack:
@@ -189,17 +191,19 @@ if __name__ == "__main__":
     # db.addLootType("Health Potion", "Adds 1 health", 70, 10)
     # db.addLootType("Poison Potion", "Removes 1 health", 70, 10)
     # print(db.getLootTable())
+    # db.updateDeaths(db.getUser(244163818782064641), 1)
     # loot = db.getLootTable()[0]
     # db.giveLoot(db.getUser(336959815374864384), {loot: 1})
     # db.giveLoot(db.getUser(1), [(db.getLootTable()[0], 2)])
     # print(db.getUser(1))
-    # db.createAttack(attackingUser=db.getUser(875963554803646514), defendingUser=db.getUser(336959815374864384), Type="Single Target", attackDescription="CHAIR")
+    # print(db.createAttack(attackingUser=db.getUser(875963554803646514), defendingUser=db.getUser(336959815374864384), Type="Single Target", attackDescription="CHAIR"))
     # print(db.getAttacks())
+    # db.completeAttack(db.getAttack(13), None)
     # attacks = db.getAttacks()
     # print(1 in attacks[*][1])
     # db.removeLoot(db.getUser(1), db.getLootTable()[0])
     # print(db.cursor.execute(f"UPDATE User SET Health = {2} WHERE UserID = {1}"))
     # for attack in db.getAttacks():
-    #     db.completeAttack(attack)
+        # db.completeAttack(attack)
     # print(db.getUser(1))
     db.connection.close()

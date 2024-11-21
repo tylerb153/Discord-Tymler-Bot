@@ -1,4 +1,3 @@
-from typing import Self
 import openai
 import os
 import dotenv
