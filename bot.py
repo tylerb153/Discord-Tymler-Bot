@@ -1,11 +1,10 @@
-#!/bin/python3
-
 import asyncio
 import time
 from typing import Optional
 import discord
 from discord import app_commands
 from discord import FFmpegPCMAudio
+from discord import ui
 from mcrcon import MCRcon #mcrcon is used to create a remote console to your minecraft server
 import yt_dlp
 import requests
@@ -14,6 +13,9 @@ import dotenv
 import os
 import subprocess
 import platform
+import json
+import databaseManager
+from databaseManager import DatabaseManager
 
 dotenv.load_dotenv()
 TOKEN = os.getenv('DISCORD_BOT_TOKEN')
@@ -26,6 +28,8 @@ tree = app_commands.CommandTree(client)
 ## User ID ##
 tylerUserID = 336959815374864384 #Used in multiple commands
 
+## Health Roles ##
+healthRoles = [1308398348918718474, 1308398507727786054, 1308398555622408255]
 
 @tree.command(name='whitelist', description='Add your minecraft username to the whitelist')
 async def whitelist(interaction: discord.Interaction, username: str):
@@ -285,6 +289,346 @@ async def remove(interaction: discord.Interaction, role: discord.Role):
         await interaction.edit_original_response(content=f'You don\'t have the role **{role.name}** so I can\'t remove it from you.')
         print(f'{interaction.user.display_name} does not have {role.name}')
 
+pvpGroup = app_commands.Group(name='pvp', description='PVP other discord members')
+
+@pvpGroup.command(name="attack", description="Attack a member and describe how you attacked them.")
+async def attack(interaction: discord.Interaction, defender: discord.Member):
+    if not interaction.guild:
+        await interaction.response.send_message(content=f'You cannot use pvp commands in a DM chat', ephemeral=True)
+        return
+    
+    # if defender == interaction.user:
+    #     await interaction.response.send_message(content="You can't attack yourself 🤦", ephemeral=True)
+    #     return
+
+    if defender == client.user:
+        await interaction.response.defer(ephemeral=True)
+        #TODO: Contact GPT for a defence that wins everytime and sends that
+        await interaction.edit_original_response(content="You can't attack me I am a ***GOD*** here")
+        return
+    
+    pvpDatabase = DatabaseManager()
+    attacks = pvpDatabase.getAttacks()
+    attackingUser = pvpDatabase.getUser(interaction.user.id)
+    defendingUser = pvpDatabase.getUser(defender.id)
+    for attack in attacks:
+        if attackingUser == attack.AttackingUser and defendingUser == attack.DefendingUser and attack.Complete == False:
+            await interaction.response.send_message(content=f'You are already attacking {defender.mention}. Wait until they defend your current attack', ephemeral=True)
+            return
+        
+    class attackModal(discord.ui.Modal):
+        def __init__(self, title: str, defendingUser: databaseManager.User):
+            super().__init__(title=title)
+            self.defendingUser = defendingUser
+            self.add_item(ui.TextInput(label="Describe your attack", placeholder="Description of your attack", style=discord.TextStyle.paragraph))
+            
+        async def on_submit(self, interaction: discord.Interaction):
+            await preformAttack(interaction, self.defendingUser)
+
+    await interaction.response.send_modal(attackModal(f'{interaction.user.nick}\'s attack', defendingUser))
+    del pvpDatabase
+    
+
+async def preformAttack(interaction: discord.Interaction, defendingUser: databaseManager.User):
+    #TODO Contact chatGPT for attack summary and type, should return object {attackType: "Single Target/AOE", Description: "description"}"
+    
+    response = json.loads('{"AttackType": "AOE", "Description": "Under the cover of chaos, the hero tore apart an old microwave, yanking out the magnetron and rigging it into a makeshift energy weapon using stripped wires, a broken drone battery, and a shattered binocular lens to focus the beam. As the enemy closed in, they flipped the jerryrigged device on, unleashing a searing pulse of concentrated microwaves that superheated metal and fried electronics in a crackling burst of destruction. Each blast from the improvised weapon sent waves of devastation through the ranks, leaving a smoking path of victory in its wake."}')
+    pvpDatabase = DatabaseManager()
+    pvpDatabase.createAttack(attackingUser=pvpDatabase.getUser(interaction.user.id), defendingUser=defendingUser, Type=response['AttackType'], attackDescription=response['Description'])
+    del pvpDatabase
+    
+    await interaction.response.send_message(content=f"## {interaction.user.mention} attacked {interaction.guild.get_member(defendingUser.UserID)}\n{response['Description']}")
+
+@pvpGroup.command(name="defend", description="Defend a member's attack and describe how you defended them.")
+async def defend(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    if not interaction.guild:
+        await interaction.edit_original_response(content=f'You cannot use pvp commands in a DM chat')
+        return
+    
+    pvpDatabase = DatabaseManager()
+    defendingUser = pvpDatabase.getUser(interaction.user.id)
+    
+
+    class DefendButton(ui.Button):
+        def __init__(self, label:str, originalInteraction:discord.Interaction, attackToDefend:databaseManager.Attack):
+            super().__init__(label=label, style=discord.ButtonStyle.red)
+            self.originalInteraction = originalInteraction
+            self.attackToDefend = attackToDefend
+
+        async def callback(self, interaction: discord.Interaction):
+            await self.originalInteraction.delete_original_response()
+            return await presentDefendModal(interaction, self.attackToDefend)
+        
+    class DefendDropdown(ui.Select):
+        def __init__(self, options:list[discord.SelectOption] , originalInteraction:discord.Interaction):
+            super().__init__(options=options)
+            self.originalInteraction = originalInteraction
+
+        async def callback(self, interaction: discord.Interaction):
+            await self.originalInteraction.delete_original_response()
+            # print(interaction.data['values'])
+            await presentDefendModal(interaction, DatabaseManager().getAttack(int(interaction.data['values'][0])))
+        
+    view = ui.View()
+    attacksParagraph = '## Attacks against you!\n'
+    attacksAgainstDefender:list[databaseManager.Attack] = []
+    for attack in pvpDatabase.getAttacks():
+        if attack.DefendingUser == defendingUser and not attack.Complete:
+            attacksAgainstDefender.append(attack)
+            attacksParagraph += f'- <@{attack.AttackingUser.UserID}> - {attack.Description}\n'
+    if len(attacksAgainstDefender) == 0:
+        await interaction.edit_original_response(content="Nobody is attacking you right now 😄\n Go make some enemies now 😈")
+    elif len(attacksAgainstDefender) == 1:
+        view.add_item(DefendButton(label="Defend this attack", originalInteraction=interaction, attackToDefend=attacksAgainstDefender[0]))
+        await interaction.edit_original_response(content=attacksParagraph, view=view)
+    else:
+        options = []
+        for attack in attacksAgainstDefender:
+            options.append(discord.SelectOption(label=interaction.guild.get_member(attack.AttackingUser.UserID).nick, value=attack.AttackID))
+        view.add_item(DefendDropdown(options, originalInteraction=interaction))
+        attacksParagraph += "\nSelect an attacker to defend against:"
+        await interaction.edit_original_response(content=attacksParagraph, view=view)
+
+    del pvpDatabase
+
+async def presentDefendModal(interaction: discord.Interaction, attackToDefend:databaseManager.Attack):
+    class defenceModal(discord.ui.Modal):
+        def __init__(self, title: str, attackToDefend: databaseManager.Attack):
+            super().__init__(title=title)
+            self.attackToDefend = attackToDefend
+            self.add_item(ui.TextInput(label="Describe your defence", placeholder="Description of your defence", style=discord.TextStyle.paragraph))
+            
+        async def on_submit(self, interaction: discord.Interaction):
+            await preformDefense(interaction, self.attackToDefend)
+
+    await interaction.response.send_modal(defenceModal(title=f'Defend against {interaction.guild.get_member(attackToDefend.AttackingUser.UserID).nick}', attackToDefend=attackToDefend))
+
+async def preformDefense(interaction: discord.Interaction, currentAttack:databaseManager.Attack):
+    # print("preforming defense")
+    await interaction.response.defer()
+    attackingUser = currentAttack.AttackingUser
+    defendingUser = currentAttack.DefendingUser
+    pvpDatabase = DatabaseManager()
+    # preform the defense
+        #TODO contact gpt and get a defense
+
+    response = json.loads('{"SuccessfulAttack": "True", "AOEDamage": "True", "Description": "Anticipating the swing, the cornered warrior ducked just as the chair splintered against the wall behind them, dodging the blow with a smirk. They rolled to the side, grabbing their comically large hammer—nearly twice their own height—and hoisted it with a theatrical flourish. With a grunt, they brought it down in a slow, exaggerated arc, forcing their opponent to scramble away, tripping over the debris in a desperate bid to avoid the absurdly oversized weapon."}')
+
+    await interaction.followup.send(content=f'## <@{defendingUser.UserID}>\'s defense against <@{attackingUser.UserID}>\n{response["Description"]}', silent=True)
+    await asyncio.sleep(15)
+    if response['SuccessfulAttack'] == "True":
+        # Remove health from affected users
+        aoe = response['AOEDamage']
+        membersAffected = [interaction.user]
+        if aoe:
+            membersAffected.append(interaction.guild.get_member(attackingUser.UserID))
+            membersAffected.append(random.choice(interaction.guild.members))
+            membersAffected.append(random.choice(interaction.guild.members))
+        for member in membersAffected:
+            user = pvpDatabase.getUser(member.id)
+            newHealth = user.Health - 1
+            if newHealth <= 0:
+                newHealth = 3
+                pvpDatabase.updateDeaths(user, user.AmountOfDeaths + 1)
+            pvpDatabase.updateHealth(user, newHealth)
+            user = pvpDatabase.getUser(user.UserID)
+            match int(user.Health):
+                case 1:
+                    await member.add_roles(discord.Object(id=healthRoles[0]))
+                    await member.remove_roles(discord.Object(id=healthRoles[1]))
+                    await member.remove_roles(discord.Object(id=healthRoles[2]))
+                case 2:
+                    await member.add_roles(discord.Object(id=healthRoles[0]))
+                    await member.add_roles(discord.Object(id=healthRoles[1]))
+                    await member.remove_roles(discord.Object(id=healthRoles[2]))
+                case _: #3 or higher adds all three health roles
+                    await member.add_roles(discord.Object(id=healthRoles[0]))
+                    await member.add_roles(discord.Object(id=healthRoles[1]))
+                    await member.add_roles(discord.Object(id=healthRoles[2]))
+        defendingUser = pvpDatabase.getUser(defendingUser.UserID)
+        
+        
+
+        # Give attacker loot
+        msg = f'## <@{attackingUser.UserID}>\'s attack was successful and they gain\n'
+        lootList = pvpDatabase.getLootTable()
+        lootGained = {}
+        for loot in lootList:
+            if loot.attackRarity > 0 and random.randint(1, 100) <= loot.attackRarity:
+                lootGained.update({loot: 1})
+        pvpDatabase.giveLoot(attackingUser, lootGained)
+
+        if lootGained == []:
+            msg += "- Nothing\n"
+        else:
+            for loot in lootGained:
+                msg += f'- {loot.Name}\n'
+
+        msg += f'\n'
+        for member in membersAffected:
+            user = pvpDatabase.getUser(member.id)
+            msg += f'\n<@{user.UserID}> is now at {user.Health} Health and {user.AmountOfDeaths} Deaths'
+        await interaction.channel.send(content=f"{msg}")
+
+        pvpDatabase.completeAttack(currentAttack, attackingUser)
+    else:
+        # Attack Failed
+        pvpDatabase.completeAttack(currentAttack, defendingUser)
+        await interaction.followup.send(content=f'## {interaction.user.mention}\'s defense was successful they take no damage\n\n<@{defendingUser.UserID}> is now at {defendingUser.Health} Health and {defendingUser.AmountOfDeaths} Deaths')
+    
+    del pvpDatabase
+
+
+@pvpGroup.command(name='health', description='Check someone\'s health')
+async def health(interaction: discord.Interaction, member: discord.Member = None):
+    await interaction.response.defer(ephemeral=True)
+    if not interaction.guild:
+        await interaction.edit_original_response(content=f'You cannot use pvp commands in a DM chat')
+        return
+    
+    pvpDatabase = DatabaseManager()
+    if not member:
+        member = interaction.user
+    user = pvpDatabase.getUser(member.id)
+    await interaction.edit_original_response(content=f'<@{user.UserID}> is at {user.Health} Health and {user.AmountOfDeaths} Deaths')
+    del pvpDatabase
+
+@pvpGroup.command(name="battles", description='List all previous battle from person')
+async def battles(interaction: discord.Interaction, member: discord.Member = None):
+    await interaction.response.defer(ephemeral=True)
+    if not interaction.guild:
+        await interaction.edit_original_response(content=f'You cannot use pvp commands in a DM chat')
+        return
+    
+    pvpDatabase = DatabaseManager()
+    if not member:
+        member = interaction.user
+    user = pvpDatabase.getUser(member.id)
+    attacks = pvpDatabase.getAttacks()
+    msg = f'## {member.mention}\'s Previous Battles:\n**Attacker v. Defender**\n'
+    for attack in attacks:
+        if attack.AttackingUser == user or attack.DefendingUser == user:
+            if attack.Winner:
+                msg += f'<@{attack.AttackingUser.UserID}> v. <@{attack.DefendingUser.UserID}> - Winner: <@{attack.Winner.UserID}>\n'
+            else:
+                msg += f'<@{attack.AttackingUser.UserID}> v. <@{attack.DefendingUser.UserID}> - Winner: *In progress*\n'
+
+    await interaction.edit_original_response(content=msg)
+    del pvpDatabase
+
+@pvpGroup.command(name="inventory", description="Show items or use an item")
+async def inventory(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    if not interaction.guild:
+        await interaction.edit_original_response(content=f'You cannot use pvp commands in a DM chat')
+        return
+    
+    pvpDatabase = DatabaseManager()
+    user = pvpDatabase.getUser(interaction.user.id)
+
+    class ItemSelect(ui.Select):
+        def __init__(self, options, originalInteraction:discord.Interaction):
+            super().__init__(placeholder="Select an item to use", options=options)
+            self.originalInteraction = originalInteraction
+        async def callback(self, interaction: discord.Interaction):
+            await item_selected(interaction, originalInteraction=self.originalInteraction)
+    view = ui.View()
+    inventoryParagraph = ''
+    lootOptions = []
+    for loot, amount in user.Inventory.items():
+        inventoryParagraph += f'{loot.Name}: {amount} -- *{loot.Description}*\n'
+        lootOptions.append(loot)
+
+    options = []
+    for loot in lootOptions:
+        options.append(discord.SelectOption(label=loot.Name, value=loot.Name))
+    selection = ItemSelect(options=options, originalInteraction=interaction)
+    
+    if lootOptions == []:
+        await interaction.edit_original_response(content=f"You have no items in your inventory.", view=view)
+    else:
+        view.add_item(selection)
+        await interaction.edit_original_response(content=f"{inventoryParagraph}\n", view=view)
+        
+    del pvpDatabase
+
+async def item_selected(interaction: discord.Interaction, originalInteraction: discord.Interaction):
+    await originalInteraction.delete_original_response()
+    pvpDatabase = DatabaseManager()
+    user = pvpDatabase.getUser(interaction.user.id)
+    lootRemoved = None
+    for loot in pvpDatabase.getLootTable():
+        if loot.Name == interaction.data['values'][0]:
+            lootRemoved = loot
+            break
+    try:
+        pvpDatabase.useLoot(user, lootRemoved)
+        await interaction.channel.send(content=f"{interaction.user.mention} used a {interaction.data['values'][0]}")
+    except Exception as e:
+        print(e)
+        await dmTyler(f"Using an item failed with error:\n{e}")
+        await originalInteraction.followup.send(f'{interaction.user.mention} I\'m sorry but you cannot use your {lootRemoved.Name}!', ephemeral=True)
+        del pvpDatabase
+     
+#TODO: Make multipage for items
+@pvpGroup.command(name="help", description="Show help for pvp commands")
+async def pvp_help(interaction: discord.Interaction):
+    await interaction.response.send_message(ephemeral=True, content=
+
+f'''
+# PvP Help Menu
+
+## Attack
+- **Command:** `/pvp attack <defender>`
+- **Description:** Initiates an attack on the specified member of the server. You will be prompted to describe your attack, which will then create an ongoing battle between you and the defender.
+- **Example:** `/pvp attack` {interaction.user.mention}
+
+**Notes:**
+- Only one active attack on a defender is allowed.
+
+
+## Defend
+- **Command:** `/pvp defend`
+- **Description:** Displays all active attacks against you and allows you to defend against one. If you choose to defend, you’ll be prompted to submit a description of your defense.
+- **Example:** `/pvp defend`
+
+**Notes:**
+- If successful, you take no damage; otherwise, you lose health and potentially die.
+- A failed defense might also damage other members in an AOE attack.
+
+
+## Health
+- **Command:** `/pvp health <member>`
+- **Description:** Displays the health and number of deaths for yourself or another server member.
+- **Example:** `/pvp health` or `/pvp health` {interaction.user.mention}
+
+
+## Battles
+- **Command:** `/pvp battles <member>`
+- **Description:** Lists all previous battles involving the specified member, showing outcomes and participants.
+- **Example:** `/pvp battles` or `/pvp battles` {client.user.mention}
+
+
+## Inventory
+- **Command:** `/pvp inventory`
+- **Description:** Shows your inventory of items and allows you to use them. Each item has unique effects.
+- **Example:** `/pvp inventory`
+
+**Usage:**
+1. Use `/pvp inventory` to view all items in your inventory.
+2. Select an item to use it.
+
+## Help
+- **Command:** `/pvp help`
+- **Description:** Displays this help menu.
+
+## When You Die:
+1. Your health is reset to **3** upon death, allowing you to "respawn" and continue participating in PvP.
+2. Your server nickname is updated to reflect your total number of deaths, adding 1 to your current count.
+
+''')
+
 mediaGroup = app_commands.Group(name='media', description='Controls to play music/videos from Youtube')
 
 @mediaGroup.command(name='play', description='Youtube url in sweet sweet add-free potentially pirated music come out or resumes it')
@@ -421,7 +765,6 @@ async def mention(interaction: discord.Interaction):
     await interaction.response.defer()
     chosenPerson = random.choice(interaction.guild.members)
     await interaction.edit_original_response(content=f'{chosenPerson.mention}')
-    
 
 ## Helper Functions ##
 def getColor(color: str):
@@ -636,7 +979,7 @@ async def on_member_update(before, after):
 ## Detect when a message is sent ##
 @client.event
 async def on_message(message):
-    print(message)
+    # print(message)
     if message.author == client.user:
         return
     meMentioned = False
@@ -723,6 +1066,7 @@ async def on_ready():
     tree.add_command(adminGroup)
     tree.add_command(mentionGroup)
     tree.add_command(jacobGroup)
+    tree.add_command(pvpGroup)
     await tree.sync()
     await changeStatus()
     print("Ready")
