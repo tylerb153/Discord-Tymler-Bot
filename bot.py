@@ -32,6 +32,9 @@ tylerUserID = 336959815374864384 #Used in multiple commands
 ## Health Roles ##
 healthRoles = [1308398348918718474, 1308398507727786054, 1308398555622408255]
 
+## pvp toggle ##
+pvp = False
+
 @tree.command(name='whitelist', description='Add your minecraft username to the whitelist')
 async def whitelist(interaction: discord.Interaction, username: str):
     await interaction.response.defer()
@@ -298,6 +301,9 @@ async def attack(interaction: discord.Interaction, defender: discord.Member):
     if not interaction.guild:
         await interaction.response.send_message(content=f'You cannot use pvp commands in a DM chat', ephemeral=True)
         return
+    if pvp == False:
+        await interaction.response.send_message(content=f'PVP is currently disabled', ephemeral=True)
+        return
     
     # if defender == interaction.user:
     #     await interaction.response.send_message(content="You can't attack yourself 🤦", ephemeral=True)
@@ -357,10 +363,10 @@ async def preformAttack(interaction: discord.Interaction, defendingUser: databas
     ai = OpenAiYapper(
 '''
 You are a dungeons and dragons DM and are overseeing battles between two group members. Your job is to take the description of what the attacker would like to do and turn it into an epic attack against their opponent. Even if the attacker says their attack lands it has NOT yet you ARE NOT allowed to mention calls on whether the attack lands EVER. You will be given the attacker's name, the defender's name, and the description of what the attacker wants to accomplish in an object that looks like this:
-{"Attacker": "Name", "Defender": "Name", "Description": "attack description"}
+{"Attacker": "Name", "Defender": "Name", "Description": "attack description", "AttackerStats": ("Strength: int", "Dexterity: int", "Intelligence: int", "Charisma: int")}
 
 You need to take this information and turn it into a 3 sentence attack scene. This scene SHOULD NOT include who wins or loses just what the attack is. NEVER mention how or if the attack lands or a winner. Your description MUST be leave room for the defender to defend themselves. The Defense and decision is supplied by someone else.
-
+You decide how the attack is preformed taking into account the stats of the attacker. for example a low strength attacker that wants to throw a rock might throw a smaller one then a high strength. All Stats are on a scale of 1 - 10
 You need to decide what type of attack this is. There are two types, `Single Target`, or `AOE`. If you believe the attack would have an large enough of an area effect then it is an AOE attack. This shouldn't be easy but require a sufficiently broad attack.
 
 Once you have an attack and description return this information in a json object with this pattern. All "'" characters need to be escaped like this "\\'":
@@ -370,7 +376,7 @@ Once you have an attack and description return this information in a json object
     response = json.loads('{"AttackType": "AOE", "Description": "Under the cover of chaos, the hero tore apart an old microwave, yanking out the magnetron and rigging it into a makeshift energy weapon using stripped wires, a broken drone battery, and a shattered binocular lens to focus the beam. As the enemy closed in, they flipped the jerryrigged device on, unleashing a searing pulse of concentrated microwaves that superheated metal and fried electronics in a crackling burst of destruction. Each blast from the improvised weapon sent waves of devastation through the ranks, leaving a smoking path of victory in its wake."}')
     try:
         # print(attackDescription)
-        aiResponse = ai.chat([f'{{"Attacker": "{interaction.user.nick}", "Defender": "{interaction.guild.get_member(defendingUser.UserID).nick}", "Description": "{attackDescription}"}}', "Remember do not under any circumstances mentions who wins, or if the attack lands. You are a DM and you are supposed to be explaining the attack. So the Defender can specify thier defense"])
+        aiResponse = ai.chat([f'{{"Attacker": "{interaction.user.nick}", "Defender": "{interaction.guild.get_member(defendingUser.UserID).nick}", "Description": "{attackDescription}", "AttackerStats": ("Strength: {attacker.Strength}", "Dexterity: {attacker.Dexterity}", "Intelligence: {attacker.Intelligence}", "Charisma: {attacker.Charisma}")}}', "Remember do not under any circumstances mentions who wins, or if the attack lands. You are a DM and you are supposed to be explaining the attack. So the Defender can specify thier defense"])
         log(aiResponse)
         response = json.loads(aiResponse)
     except Exception as e:
@@ -391,6 +397,9 @@ Once you have an attack and description return this information in a json object
 @pvpGroup.command(name="defend", description="Defend a member's attack and describe how you defended them.")
 async def defend(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
+    if pvp == False:
+        await interaction.edit_original_response(content=f'PVP is currently disabled')
+        return
     if not interaction.guild:
         await interaction.edit_original_response(content=f'You cannot use pvp commands in a DM chat')
         return
@@ -423,7 +432,7 @@ async def defend(interaction: discord.Interaction):
     attacksParagraph = '## Attacks against you!\n'
     attacksAgainstDefender:list[databaseManager.Attack] = []
     for attack in pvpDatabase.getAttacks():
-        if attack.DefendingUser == defendingUser and not attack.Complete:
+        if attack.DefendingUser == defendingUser and not attack.Complete and attack.Type != "Pending":
             attacksAgainstDefender.append(attack)
             attacksParagraph += f'- <@{attack.AttackingUser.UserID}> - {attack.Description}\n'
     if len(attacksAgainstDefender) == 0:
@@ -434,6 +443,8 @@ async def defend(interaction: discord.Interaction):
     else:
         options = []
         for attack in attacksAgainstDefender:
+            if len(options) > 3:
+                break
             options.append(discord.SelectOption(label=interaction.guild.get_member(attack.AttackingUser.UserID).nick, value=attack.AttackID))
         view.add_item(DefendDropdown(options, originalInteraction=interaction))
         attacksParagraph += "\nSelect an attacker to defend against:"
@@ -464,9 +475,10 @@ async def preformDefense(interaction: discord.Interaction, currentAttack:databas
     ai = OpenAiYapper(
 '''
 You are a dungeons and dragons DM and are overseeing battles between two group members. Your job is to take the description of what the defender would like to do and turn it into an epic defence against their opponent's attack. You will be given the attacker's name, the defender's name, and the description of what the defender wants to do in order to defend the attack in an object that looks like this:
-{"Attacker": "Name", "Defender": "Name", "Attack": "attack description", "DefenseDescription": "how defender would like to defend against taking damage"}
+{"Attacker": "Name", "Defender": "Name", "Attack": "attack description", "DefenseDescription": "how defender would like to defend against taking damage", "AttackerStats": ("Strength: int", "Dexterity: int", "Intelligence: int", "Charisma: int"), DefenderStats": ("Strength: int", "Dexterity: int", "Intelligence: int", "Charisma: int")}
 
 You need to take this information and turn it into a 3 sentence defense scene. This scene SHOULD NOT include who wins or loses just what the defense is. This is purely a defense absolutely NO counterattacks. You should determine whether or not the attack is a success it shouldn't be too easy to defend an attack the defender may not have the skill to pull of the move they'd like it is up to you to decide if they do. If the defender isn't damaged this is a failed attack and SuccessfulAttack is false. If the defender does take damage SuccessfulAttack is True
+You decide how the defense is preformed taking into account the stats of the attacker and defender. for example a low strength defender may struggle to block a high strength attacker using an attack that requires a high strength. All Stats are on a scale of 1 - 10
 
 Always return the defense you came up with in a json object with this pattern. All "'" characters need to be escaped like this "\\'":
 {"SuccessfulAttack":"True", "Description": "Your Description of the defense"}
@@ -476,7 +488,7 @@ Always return the defense you came up with in a json object with this pattern. A
     aiResponse = ""
     response = json.loads('{"SuccessfulAttack": "True", "Description": "Anticipating the swing, the cornered warrior ducked just as the chair splintered against the wall behind them, dodging the blow with a smirk. They rolled to the side, grabbing their comically large hammer—nearly twice their own height—and hoisted it with a theatrical flourish. With a grunt, they brought it down in a slow, exaggerated arc, forcing their opponent to scramble away, tripping over the debris in a desperate bid to avoid the absurdly oversized weapon."}')
     try:
-        aiResponse = ai.chat([f'{{"Attacker": "{interaction.guild.get_member(attackingUser.UserID).nick}", "Defender": "{interaction.guild.get_member(defendingUser.UserID).nick}", "Attack": "{currentAttack.Description}", "DefenseDescription": "{defenseDescription}"}}'])
+        aiResponse = ai.chat([f'{{"Attacker": "{interaction.guild.get_member(attackingUser.UserID).nick}", "Defender": "{interaction.guild.get_member(defendingUser.UserID).nick}", "Attack": "{currentAttack.Description}", "DefenseDescription": "{defenseDescription}", "AttackerStats": ("Strength: {attackingUser.Strength}", "Dexterity: {attackingUser.Dexterity}", "Intelligence: {attackingUser.Intelligence}", "Charisma: {attackingUser.Charisma}"), "DefenderStats": ("Strength: {defendingUser.Strength}", "Dexterity: {defendingUser.Dexterity}", "Intelligence: {defendingUser.Intelligence}", "Charisma: {defendingUser.Charisma}")}}'])
         log(aiResponse)
         response = json.loads(aiResponse)
     except Exception as e:
@@ -501,24 +513,7 @@ Always return the defense you came up with in a json object with this pattern. A
         defendingUser = pvpDatabase.getUser(defendingUser.UserID)
         
         # Give attacker loot
-        msg = f'## <@{attackingUser.UserID}>\'s attack was successful and they gain\n'
-        lootList = pvpDatabase.getLootTable()
-        lootGained = {}
-        for loot in lootList:
-            if loot.attackRarity > 0 and random.randint(1, 100) <= loot.attackRarity:
-                lootGained.update({loot: 1})
-        pvpDatabase.giveLoot(attackingUser, lootGained)
-
-        if lootGained == []:
-            msg += "- Nothing\n"
-        else:
-            for loot in lootGained:
-                msg += f'- {loot.Name}\n'
-
-        msg += f'\n'
-        for member in membersAffected:
-            user = pvpDatabase.getUser(member.id)
-            msg += f'\n<@{user.UserID}> is now at {user.Health} Health and {user.AmountOfDeaths} Deaths'
+        msg = giveLoot(attackingUser, pvpDatabase, membersAffected)
         await interaction.delete_original_response()
         await interaction.channel.send(content=f"{msg}")
 
@@ -534,31 +529,77 @@ Always return the defense you came up with in a json object with this pattern. A
 async def dealDamage(membersAffected: list[discord.Member], pvpDatabase: DatabaseManager):
     for member in membersAffected:
             user = pvpDatabase.getUser(member.id)
-            newHealth = user.Health - 1
+            newHealth = user.Health
+            #use a forcefield if a user has one
+            if user.Inventory['Forcefield'] > 0:
+                forcefieldToRemove = None
+                for loot in user.Inventory:
+                    if loot.Name == 'Forcefield':
+                        forcefieldToRemove = loot
+                        break
+                pvpDatabase.removeLoot(user, forcefieldToRemove)
+            else:
+                newHealth = user.Health - 1
             if newHealth <= 0:
                 newHealth = 3
-                pvpDatabase.updateDeaths(user, user.AmountOfDeaths + 1)
+                #Use a totem of undying if a user has one
+                if user.Inventory['Totem of Undying'] > 0:
+                    totemToRemove = None
+                    for loot in user.Inventory:
+                        if loot.Name == 'Totem of Undying':
+                            totemToRemove = loot
+                            break
+                    pvpDatabase.removeLoot(user, totemToRemove)
+                else:
+                    pvpDatabase.updateDeaths(user, user.AmountOfDeaths + 1)
+                    pvpDatabase.updateUserStats(user, random.randint(1, 10), random.randint(1, 10), random.randint(1, 10), random.randint(1, 10))
+                user = pvpDatabase.getUser(user.UserID)
                 try:
                     await member.edit(nick=f'{member.nick} {user.AmountOfDeaths + 1}')
                 except Exception as e:
                     await dmTyler(f'Failed to edit nick in on_member_update I was trying to change it to **{member.nick} {user.AmountOfDeaths + 1}**:\n{e}')
             pvpDatabase.updateHealth(user, newHealth)
-            user = pvpDatabase.getUser(user.UserID)
-            match int(user.Health):
-                case 1:
-                    await member.add_roles(discord.Object(id=healthRoles[0]))
-                    await member.remove_roles(discord.Object(id=healthRoles[1]))
-                    await member.remove_roles(discord.Object(id=healthRoles[2]))
-                case 2:
-                    await member.add_roles(discord.Object(id=healthRoles[0]))
-                    await member.add_roles(discord.Object(id=healthRoles[1]))
-                    await member.remove_roles(discord.Object(id=healthRoles[2]))
-                case _: #3 or higher adds all three health roles
-                    await member.add_roles(discord.Object(id=healthRoles[0]))
-                    await member.add_roles(discord.Object(id=healthRoles[1]))
-                    await member.add_roles(discord.Object(id=healthRoles[2]))
-    
+            await updateHealthRoles(member)
 
+async def updateHealthRoles(member: discord.Member):
+    match int(DatabaseManager().getUser(member.id).Health):
+        case 1:
+            await member.add_roles(discord.Object(id=healthRoles[0]))
+            await member.remove_roles(discord.Object(id=healthRoles[1]))
+            await member.remove_roles(discord.Object(id=healthRoles[2]))
+        case 2:
+            await member.add_roles(discord.Object(id=healthRoles[0]))
+            await member.add_roles(discord.Object(id=healthRoles[1]))
+            await member.remove_roles(discord.Object(id=healthRoles[2]))
+        case _: #3 or higher adds all three health roles
+            await member.add_roles(discord.Object(id=healthRoles[0]))
+            await member.add_roles(discord.Object(id=healthRoles[1]))
+            await member.add_roles(discord.Object(id=healthRoles[2]))
+    
+def giveLoot(attackingUser: databaseManager.User, pvpDatabase: DatabaseManager, membersAffected: list[discord.Member]) -> str:
+    msg = f'## <@{attackingUser.UserID}>\'s attack was successful and they gain\n'
+    lootList = pvpDatabase.getLootTable()
+    lootGained = {}
+    for loot in lootList:
+        if loot.attackRarity > 0 and random.randint(1, 100) <= loot.attackRarity:
+            if loot.Name == "Gold":
+                lootGained.update({loot: random.randint(1, 25)})
+            else:
+                lootGained.update({loot: 1})
+    pvpDatabase.giveLoot(attackingUser, lootGained)
+
+    if lootGained == []:
+        msg += "- Nothing\n"
+    else:
+        for loot in lootGained:
+            msg += f'- {loot.Name}\n'
+
+    msg += f'\n'
+    for member in membersAffected:
+        user = pvpDatabase.getUser(member.id)
+        msg += f'\n<@{user.UserID}> is now at {user.Health} Health and {user.AmountOfDeaths} Deaths'
+
+    return msg
 
 @pvpGroup.command(name='health', description='Check someone\'s health')
 async def health(interaction: discord.Interaction, member: discord.Member = None):
@@ -622,12 +663,15 @@ async def inventory(interaction: discord.Interaction):
     inventoryParagraph = ''
     lootOptions = []
     for loot, amount in user.Inventory.items():
+        if amount == 0:
+            continue
         inventoryParagraph += f'{loot.Name}: {amount} -- *{loot.Description}*\n'
         lootOptions.append(loot)
 
     options = []
     for loot in lootOptions:
-        options.append(discord.SelectOption(label=loot.Name, value=loot.Name))
+        if loot.Consumable:
+            options.append(discord.SelectOption(label=loot.Name, value=loot.Name))
     selection = ItemSelect(options=options, originalInteraction=interaction)
     
     if lootOptions == []:
@@ -649,6 +693,8 @@ async def item_selected(interaction: discord.Interaction, originalInteraction: d
             break
     try:
         pvpDatabase.useLoot(user, lootRemoved)
+        if lootRemoved.Name == "Health Potion":
+            await updateHealthRoles(interaction.user)
         await interaction.channel.send(content=f"{interaction.user.mention} used a {interaction.data['values'][0]}")
     except Exception as e:
         print(e)
@@ -656,7 +702,19 @@ async def item_selected(interaction: discord.Interaction, originalInteraction: d
         await originalInteraction.followup.send(f'{interaction.user.mention} I\'m sorry but you cannot use your {lootRemoved.Name}!', ephemeral=True)
         del pvpDatabase
      
-#TODO: Make multipage for items
+@pvpGroup.command(name="stats", description="Show your stats")
+async def stats(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    if not interaction.guild:
+        await interaction.edit_original_response(content=f'You cannot use pvp commands in a DM chat')
+        return
+    
+    pvpDatabase = DatabaseManager()
+    user = pvpDatabase.getUser(interaction.user.id)
+    await interaction.edit_original_response(content=f'# Your Stats:\n- Strength - {user.Strength}\n- Dexterity - {user.Dexterity}\n- Intelligence - {user.Intelligence}\n- Charisma - {user.Charisma}')
+    del pvpDatabase
+
+#TODO: Add Totem of undying
 @pvpGroup.command(name="help", description="Show help for pvp commands")
 async def pvp_help(interaction: discord.Interaction):
     await interaction.response.send_message(ephemeral=True, content=
@@ -667,7 +725,7 @@ f'''
 ## Attack
 - **Command:** `/pvp attack <defender>`
 - **Description:** Initiates an attack on the specified member of the server. You will be prompted to describe your attack, which will then create an ongoing battle between you and the defender.
-- **Example:** `/pvp attack` {interaction.user.mention}
+- **Example:** `/pvp attack` {client.user.mention}
 
 **Notes:**
 - Only one active attack on a defender is allowed.
@@ -686,7 +744,7 @@ f'''
 ## Health
 - **Command:** `/pvp health <member>`
 - **Description:** Displays the health and number of deaths for yourself or another server member.
-- **Example:** `/pvp health` or `/pvp health` {interaction.user.mention}
+- **Example:** `/pvp health` or `/pvp health` {client.user.mention}
 
 
 ## Battles
@@ -706,7 +764,7 @@ f'''
 
 ## Help
 - **Command:** `/pvp help`
-- **Description:** Displays this help menu.
+- **Description:** Displays this help menu and the list of items
 
 ## When You Die:
 1. Your health is reset to **3** upon death, allowing you to "respawn" and continue participating in PvP.
@@ -714,7 +772,79 @@ f'''
 
 ''')
 
-#TODO: PVP ADMIN CONTROLS NEED A WAY TO ENTER INFORMATION INTO THE DATABASE MANUALLY
+    await interaction.followup.send(ephemeral=True, content=
+f'''
+## Items
+- **Gold:**: Is shiny.
+### Consumables
+- **Health Potion:**: Restores 1 health.
+- **Steroids**: Adds 1 Strength
+- **Weed**: Adds 1 Charisma
+- **Shrooms**: Adds 1 Intelligence
+- **Potion of Swiftness**: Adds 1 Dexterity
+
+### Passive Effects
+- **Totem of Undying**: When you die the totem takes your place. 
+- **Forcefield**: You won't take damage the next time you are hit.
+'''
+    )
+
+pvpAdminGroup = app_commands.Group(name="pvp_admin", description="Commands that only the pvp admin can use")
+
+@pvpAdminGroup.command(name="enable", description="Enable pvp")
+async def pvp_enable(interaction: discord.Interaction):
+    global pvp 
+    pvp = True
+    await interaction.response.send_message(content="@everyone PVP has been enabled.")
+
+@pvpAdminGroup.command(name="disable", description="Disable pvp")
+async def pvp_disable(interaction: discord.Interaction):
+    global pvp
+    pvp = False
+    await interaction.response.send_message(content="PVP has been disabled.")
+
+@pvpAdminGroup.command(name="add_loot_type", description="Add a loot type to the database")
+async def add_loot_type(interaction: discord.Interaction, name: str, description: str, consumable: bool, attack_rarity: int, vc_rarity: int):
+    pvpDatabase = DatabaseManager()
+    pvpDatabase.addLootType(name, description, consumable, attack_rarity, vc_rarity)
+    await interaction.response.send_message(content=f"{name} added to the database.")
+
+@pvpAdminGroup.command(name='fix_attack', description='Fix an attack in the database')
+async def fix_attack(interaction: discord.Interaction, attack_id: Optional[int], attack_type: Optional[str], attack_description: Optional[str]):
+    interaction.response.defer(ephemeral=True)
+    pvpDatabase = DatabaseManager()
+    attacks = pvpDatabase.getAttacks()
+    for attack in attacks:
+        if attack.Type == "Pending":
+            if attack_id == attack.AttackID and attack_type and attack_description:
+                pvpDatabase.editAttack(attack, attack_type, attack_description)
+                await interaction.edit_original_response(content=f"{attack} fixed")
+                await interaction.channel.send(f'## <@{attack.AttackingUser.UserID}> attacked <@{attack.DefendingUser.UserID}>\n{attack_description}')
+                break
+            else:
+                await interaction.edit_original_response(content=f"{attack}")
+
+@pvpAdminGroup.command(name='fix_defense', description='Fix a defense in the database')
+async def fix_defense(interaction: discord.Interaction, attack_id: int, defense_description: str, winner_id: int):
+    interaction.response.defer(ephemeral=True)
+    pvpDatabase = DatabaseManager()
+    attacks = pvpDatabase.getAttacks()
+    for attack in attacks:
+        if attack.Winner == None and attack_id == attack.AttackID:
+            pvpDatabase.editAttack(attack=attack, Winner=winner_id)
+            await interaction.edit_original_response(content=f"{attack} fixed")
+            await interaction.channel.send(content=f'## <@{attack.DefendingUser.UserID}>\'s defense against <@{attack.AttackingUser.UserID}>\n{defense_description}', silent=True)
+            if winner_id == attack.AttackingUser.UserID:
+                aoe = attack.Type == "AOE"
+                membersAffected = [interaction.user]
+                if aoe:
+                    membersAffected.append(interaction.guild.get_member(attack.attackingUser.UserID))
+                    membersAffected.append(random.choice(interaction.guild.members))
+                    membersAffected.append(random.choice(interaction.guild.members))
+                await dealDamage(membersAffected=membersAffected, pvpDatabase=pvpDatabase)
+                msg = giveLoot(attackingUser=attack.AttackingUser, pvpDatabase=pvpDatabase, membersAffected=membersAffected)
+                await interaction.channel.send(content=msg)
+            break
 
 
 mediaGroup = app_commands.Group(name='media', description='Controls to play music/videos from Youtube')
@@ -1165,11 +1295,10 @@ async def on_ready():
     tree.add_command(mentionGroup)
     tree.add_command(jacobGroup)
     tree.add_command(pvpGroup)
+    tree.add_command(pvpAdminGroup)
     await tree.sync()
     await changeStatus()
     print("Ready")
-
-
 
 client.run(TOKEN)
 
