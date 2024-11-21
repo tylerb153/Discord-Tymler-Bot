@@ -330,6 +330,8 @@ async def attack(interaction: discord.Interaction, defender: discord.Member):
             await preformAttack(interaction, self.defendingUser, self.attackDescription.value)
 
     await interaction.response.send_modal(attackModal(f'{interaction.user.nick}\'s attack', defendingUser))
+    await updateHealthRoles(interaction.user)
+    await updateHealthRoles(defender)
     del pvpDatabase
     
 
@@ -397,6 +399,7 @@ Once you have an attack and description return this information in a json object
 @pvpGroup.command(name="defend", description="Defend a member's attack and describe how you defended them.")
 async def defend(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
+    await updateHealthRoles(interaction.user)
     if pvp == False:
         await interaction.edit_original_response(content=f'PVP is currently disabled')
         return
@@ -468,6 +471,7 @@ async def presentDefendModal(interaction: discord.Interaction, attackToDefend:da
 async def preformDefense(interaction: discord.Interaction, currentAttack:databaseManager.Attack, defenseDescription:str):
     # print("preforming defense")
     await interaction.response.defer(thinking=True)
+    await updateHealthRoles(interaction.user)
     attackingUser = currentAttack.AttackingUser
     defendingUser = currentAttack.DefendingUser
     pvpDatabase = DatabaseManager()
