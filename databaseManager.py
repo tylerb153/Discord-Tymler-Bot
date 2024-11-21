@@ -222,8 +222,10 @@ class DatabaseManager:
 
 if __name__ == "__main__":
     db = DatabaseManager()
-    print(db.cursor.execute("SELECT * FROM User").fetchall())
-    print(db.getUser(1))
+    # print(db.cursor.execute("SELECT * FROM User").fetchall())
+    # print(db.getUser(1).Inventory)
+    # for item in db.getUser(1).Inventory.items():
+    #     print(item.Name)
     # print(db.getUser(875963554803646514))
     # db.addLootType("Health Potion", "Adds 1 health", 70, 10)
     # db.addLootType("Poison Potion", "Removes 1 health", 70, 10)

@@ -531,28 +531,36 @@ async def dealDamage(membersAffected: list[discord.Member], pvpDatabase: Databas
             user = pvpDatabase.getUser(member.id)
             newHealth = user.Health
             #use a forcefield if a user has one
-            if user.Inventory['Forcefield'] > 0:
-                forcefieldToRemove = None
-                for loot in user.Inventory:
-                    if loot.Name == 'Forcefield':
-                        forcefieldToRemove = loot
-                        break
-                pvpDatabase.removeLoot(user, forcefieldToRemove)
-            else:
+            try:
+                if user.Inventory['Forcefield'] > 0:
+                    forcefieldToRemove = None
+                    for loot in user.Inventory:
+                        if loot.Name == 'Forcefield':
+                            forcefieldToRemove = loot
+                            break
+                    pvpDatabase.removeLoot(user, forcefieldToRemove)
+                else:
+                    newHealth = user.Health - 1
+            except:
                 newHealth = user.Health - 1
             if newHealth <= 0:
                 newHealth = 3
                 #Use a totem of undying if a user has one
-                if user.Inventory['Totem of Undying'] > 0:
-                    totemToRemove = None
-                    for loot in user.Inventory:
-                        if loot.Name == 'Totem of Undying':
-                            totemToRemove = loot
-                            break
-                    pvpDatabase.removeLoot(user, totemToRemove)
-                else:
+                try:
+                    if user.Inventory['Totem of Undying'] > 0:
+                        totemToRemove = None
+                        for loot in user.Inventory:
+                            if loot.Name == 'Totem of Undying':
+                                totemToRemove = loot
+                                break
+                        pvpDatabase.removeLoot(user, totemToRemove)
+                    else:
+                        pvpDatabase.updateDeaths(user, user.AmountOfDeaths + 1)
+                        pvpDatabase.updateUserStats(user, random.randint(1, 10), random.randint(1, 10), random.randint(1, 10), random.randint(1, 10))
+                except:
                     pvpDatabase.updateDeaths(user, user.AmountOfDeaths + 1)
                     pvpDatabase.updateUserStats(user, random.randint(1, 10), random.randint(1, 10), random.randint(1, 10), random.randint(1, 10))
+                
                 user = pvpDatabase.getUser(user.UserID)
                 try:
                     await member.edit(nick=f'{member.nick} {user.AmountOfDeaths + 1}')
