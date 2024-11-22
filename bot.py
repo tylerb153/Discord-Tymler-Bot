@@ -518,6 +518,10 @@ Always return the defense you came up with in a json object with this pattern. A
         msg = giveLoot(attackingUser, pvpDatabase, membersAffected)
         await dealDamage(interaction, membersAffected, pvpDatabase)
         defendingUser = pvpDatabase.getUser(defendingUser.UserID)
+        msg += f'\n'
+        for member in membersAffected:
+            user = pvpDatabase.getUser(member.id)
+            msg += f'\n<@{user.UserID}> is now at {user.Health} Health and {user.AmountOfDeaths} Deaths'
         
         await interaction.delete_original_response()
         await interaction.channel.send(content=f"{msg}")
@@ -612,11 +616,6 @@ def giveLoot(attackingUser: databaseManager.User, pvpDatabase: DatabaseManager, 
     else:
         for loot in lootGained:
             msg += f'- {loot.Name}\n'
-
-    msg += f'\n'
-    for member in membersAffected:
-        user = pvpDatabase.getUser(member.id)
-        msg += f'\n<@{user.UserID}> is now at {user.Health} Health and {user.AmountOfDeaths} Deaths'
 
     return msg
 

@@ -88,6 +88,17 @@ class DatabaseManager:
         self.cursor.execute("CREATE TABLE IF NOT EXISTS UserLoot(UserID INTEGER PRIMARY KEY, FOREIGN KEY (UserID) REFERENCES User(UserID));")
         self.cursor.execute("CREATE TABLE IF NOT EXISTS Attack (AttackID INTEGER PRIMARY KEY, AttackingUserID INTEGER, DefendingUserID INTEGER, Type TEXT, Description TEXT, Complete BOOLEAN DEFAULT False, Winner TEXT DEFAULT NULL, FOREIGN KEY (AttackingUserID) REFERENCES User(UserID), FOREIGN KEY (DefendingUserID) REFERENCES User(UserID))")
         self.cursor.execute("CREATE TABLE IF NOT EXISTS Loot (LootName TEXT PRIMARY KEY, LootDescription TEXT, Consumable BOOLEAN, attackRarity INTEGER, vcRarity INTEGER)")
+        implementedLoot = (
+            ("Gold", "Is shiny", "False", "70", "0"), 
+            ("Health Potion", "Adds 1 Health", "True", "33", "20"), 
+            ("Steroids", "Adds 1 Strength", "True", "20", "15"), 
+            ("Weed", "Adds 1 Charisma", "True", "20", "15"), 
+            ("Shrooms", "Adds 1 Intelligence", "True", "20", "15"), 
+            ("Potion of Swiftness", "Adds 1 Dexterity", "True", "20", "15"), 
+            ("Totem of Undying", "When you die the totem takes your place", "False", "10", "10"), 
+            ("Forcefield", "You won't take damage the next time you are hit", "False", "5", "5")
+        )
+        self.cursor.executemany("INSERT OR IGNORE INTO Loot (LootName, LootDescription, Consumable, attackRarity, vcRarity) VALUES (?, ?, ?, ?, ?)", implementedLoot)
         self.connection.commit()
         
 
