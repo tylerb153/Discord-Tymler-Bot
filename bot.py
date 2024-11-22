@@ -689,6 +689,8 @@ async def inventory(interaction: discord.Interaction):
     if options:
         view.add_item(selection)
         await interaction.edit_original_response(content=f"{inventoryParagraph}\n", view=view)
+    elif lootOptions:
+            await interaction.edit_original_response(content=f"{inventoryParagraph}\n")
     else:
         await interaction.edit_original_response(content=f"You have no items in your inventory.", view=view)
         
