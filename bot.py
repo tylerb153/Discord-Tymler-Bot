@@ -687,11 +687,11 @@ async def inventory(interaction: discord.Interaction):
             options.append(discord.SelectOption(label=loot.Name, value=loot.Name))
     selection = ItemSelect(options=options, originalInteraction=interaction)
     
-    if lootOptions == []:
-        await interaction.edit_original_response(content=f"You have no items in your inventory.", view=view)
-    else:
+    if options:
         view.add_item(selection)
         await interaction.edit_original_response(content=f"{inventoryParagraph}\n", view=view)
+    else:
+        await interaction.edit_original_response(content=f"You have no items in your inventory.", view=view)
         
     del pvpDatabase
 
