@@ -1,4 +1,5 @@
 import asyncio
+import re
 import time
 from typing import Optional
 import discord
@@ -583,9 +584,9 @@ async def dealDamage(interaction: discord.Interaction, membersAffected: list[dis
                 user = pvpDatabase.getUser(user.UserID)
                 try:
                     newNick = f'{member.nick} {user.AmountOfDeaths + 1}'
-                    if member.nick.endsWith(str(user.AmountOfDeaths - 1)):
-                        newNick = newNick[:-2]
-                    await member.edit(nick=f'{member.nick} {user.AmountOfDeaths + 1}')
+                    if re.search(r' \d+$', member.nick):
+                        newNick = re.sub(r' \d+$', '', newNick)
+                    await member.edit(nick=f'{newNick}')
                 except Exception as e:
                     await dmTyler(f'Failed to edit nick in on_member_update I was trying to change it to **{member.nick} {user.AmountOfDeaths + 1}**:\n{e}')
             pvpDatabase.updateHealth(user, newHealth)
@@ -1232,16 +1233,21 @@ async def on_voice_state_update(member, before, after):
 ## Detect when a member is updated ##
 @client.event
 async def on_member_update(before: discord.Member, after: discord.Member):
-    if after.nick == None:
+    if after.nick == None and after.global_name != None:
+            await after.edit(nick=after.global_name)
+    elif after.nick == None and after.global_name == None:
             await after.edit(nick=after.name)
     if after != client.user and before.nick != after.nick:
         amountOfDeaths = int(DatabaseManager().getUser(after.id).AmountOfDeaths)
-        if after.nick.endswith(str(amountOfDeaths + 1)) or amountOfDeaths == 0:
-            await after.guild.get_channel(785666938276675624).send(content=f'{after.mention} :eyes:')
+        if after.nick.endswith(f' {amountOfDeaths + 1}') or amountOfDeaths == 0:
+            # await after.guild.get_channel(785666938276675624).send(content=f'{after.mention} :eyes:')
             await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f'{after.nick} change thier name.', state=f'👀👀👀👀'))
         else:
             try:
-                await after.edit(nick=f'{after.nick} {amountOfDeaths + 1}')
+                newNick = after.nick
+                if re.search(r' \d+$', after.nick):
+                    newNick = re.sub(r' \d+$', '', newNick)
+                await after.edit(nick=f'{newNick} {amountOfDeaths + 1}')
             except Exception as e:
                 await dmTyler(f'Failed to edit nick in on_member_update I was trying to change it to **{after.nick} {amountOfDeaths + 1}**:\n{e}')
     
