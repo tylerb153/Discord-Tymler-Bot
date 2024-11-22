@@ -511,8 +511,10 @@ Always return the defense you came up with in a json object with this pattern. A
         membersAffected = [interaction.user]
         if aoe:
             membersAffected.append(interaction.guild.get_member(attackingUser.UserID))
-            membersAffected.append(random.choice(interaction.guild.members))
-            membersAffected.append(random.choice(interaction.guild.members))
+            while len(membersAffected) < 4:
+                randomMember = random.choice(interaction.guild.members)
+                if randomMember != client.user:
+                    membersAffected.append(randomMember)
         msg = giveLoot(attackingUser, pvpDatabase, membersAffected)
         await dealDamage(interaction, membersAffected, pvpDatabase)
         defendingUser = pvpDatabase.getUser(defendingUser.UserID)
@@ -531,6 +533,8 @@ Always return the defense you came up with in a json object with this pattern. A
 
 async def dealDamage(interaction: discord.Interaction, membersAffected: list[discord.Member], pvpDatabase: DatabaseManager):
     for member in membersAffected:
+            if member == client.user:
+                continue
             user = pvpDatabase.getUser(member.id)
             newHealth = user.Health
             #use a forcefield if a user has one
@@ -575,6 +579,8 @@ async def dealDamage(interaction: discord.Interaction, membersAffected: list[dis
             await updateHealthRoles(member)
 
 async def updateHealthRoles(member: discord.Member):
+    if member == client.user:
+        return
     match int(DatabaseManager().getUser(member.id).Health):
         case 1:
             await member.add_roles(discord.Object(id=healthRoles[0]))
