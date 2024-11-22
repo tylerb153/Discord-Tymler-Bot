@@ -355,7 +355,7 @@ async def preformAttack(interaction: discord.Interaction, defendingUser: databas
             
             response += f"\n\n{interaction.user.mention} loses 1 Healh"
             await interaction.channel.send(content=response, silent=True)
-            await dealDamage([interaction.user], DatabaseManager())
+            await dealDamage(interaction, [interaction.user], DatabaseManager())
             await preformAttack(interaction=interaction, defendingUser=DatabaseManager().getUser(randomMember.id), attackDescription=attackDescription)
             return
 
@@ -513,7 +513,7 @@ Always return the defense you came up with in a json object with this pattern. A
             membersAffected.append(interaction.guild.get_member(attackingUser.UserID))
             membersAffected.append(random.choice(interaction.guild.members))
             membersAffected.append(random.choice(interaction.guild.members))
-        await dealDamage(membersAffected, pvpDatabase)
+        await dealDamage(interaction, membersAffected, pvpDatabase)
         defendingUser = pvpDatabase.getUser(defendingUser.UserID)
         
         # Give attacker loot
@@ -530,7 +530,7 @@ Always return the defense you came up with in a json object with this pattern. A
     
     del pvpDatabase
 
-async def dealDamage(membersAffected: list[discord.Member], pvpDatabase: DatabaseManager):
+async def dealDamage(interaction: discord.Interaction, membersAffected: list[discord.Member], pvpDatabase: DatabaseManager):
     for member in membersAffected:
             user = pvpDatabase.getUser(member.id)
             newHealth = user.Health
@@ -541,6 +541,7 @@ async def dealDamage(membersAffected: list[discord.Member], pvpDatabase: Databas
                     for loot in user.Inventory:
                         if loot.Name == 'Forcefield':
                             forcefieldToRemove = loot
+                            await interaction.channel.send(content=f'{member.mention} used a {loot.Name}', silent=True)
                             break
                     pvpDatabase.removeLoot(user, forcefieldToRemove)
                 else:
@@ -556,6 +557,7 @@ async def dealDamage(membersAffected: list[discord.Member], pvpDatabase: Databas
                         for loot in user.Inventory:
                             if loot.Name == 'Totem of Undying':
                                 totemToRemove = loot
+                                await interaction.channel.send(content=f'{member.mention} used a {loot.Name}', silent=True)
                                 break
                         pvpDatabase.removeLoot(user, totemToRemove)
                     else:
@@ -789,7 +791,7 @@ f'''
 ## Items
 - **Gold:**: Is shiny.
 ### Consumables
-- **Health Potion:**: Restores 1 health.
+- **Health Potion:**: Restores 1 Health.
 - **Steroids**: Adds 1 Strength
 - **Weed**: Adds 1 Charisma
 - **Shrooms**: Adds 1 Intelligence
@@ -853,7 +855,7 @@ async def fix_defense(interaction: discord.Interaction, attack_id: int, defense_
                     membersAffected.append(interaction.guild.get_member(attack.attackingUser.UserID))
                     membersAffected.append(random.choice(interaction.guild.members))
                     membersAffected.append(random.choice(interaction.guild.members))
-                await dealDamage(membersAffected=membersAffected, pvpDatabase=pvpDatabase)
+                await dealDamage(interaction, membersAffected=membersAffected, pvpDatabase=pvpDatabase)
                 msg = giveLoot(attackingUser=attack.AttackingUser, pvpDatabase=pvpDatabase, membersAffected=membersAffected)
                 await interaction.channel.send(content=msg)
             break
