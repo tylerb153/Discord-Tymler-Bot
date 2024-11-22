@@ -165,6 +165,10 @@ class DatabaseManager:
 
         return lootList
     
+    def editRarity(self, lootName: str, attackRarity: int, vcRarity: int):
+        self.cursor.execute(f"UPDATE Loot SET attackRarity = {attackRarity}, vcRarity = {vcRarity} WHERE LootName = '{lootName}'")
+        self.connection.commit()
+    
     def updateHealth(self, user: User, newhealth: int):
         self.cursor.execute(f"UPDATE User SET Health = {newhealth} WHERE UserID = {user.UserID}")
         self.connection.commit()

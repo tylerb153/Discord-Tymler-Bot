@@ -600,7 +600,7 @@ def giveLoot(attackingUser: databaseManager.User, pvpDatabase: DatabaseManager, 
                 lootGained.update({loot: 1})
     pvpDatabase.giveLoot(attackingUser, lootGained)
 
-    if lootGained == []:
+    if lootGained == {}:
         msg += "- Nothing\n"
     else:
         for loot in lootGained:
@@ -857,6 +857,13 @@ async def fix_defense(interaction: discord.Interaction, attack_id: int, defense_
                 msg = giveLoot(attackingUser=attack.AttackingUser, pvpDatabase=pvpDatabase, membersAffected=membersAffected)
                 await interaction.channel.send(content=msg)
             break
+
+@pvpAdminGroup.command(name='adjust_rarity', description='Adjust the rarity of a loot type')
+async def adjust_rarity(interaction: discord.Interaction, loot_name: str, attack_rarity: int, vc_rarity: int):
+    await interaction.response.defer(ephemeral=True)
+    pvpDatabase = DatabaseManager()
+    pvpDatabase.editRarity(loot_name, attack_rarity, vc_rarity)
+    await interaction.edit_original_response(content=f"{loot_name} rarity adjusted")
 
 
 mediaGroup = app_commands.Group(name='media', description='Controls to play music/videos from Youtube')
