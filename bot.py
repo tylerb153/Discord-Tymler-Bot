@@ -513,11 +513,10 @@ Always return the defense you came up with in a json object with this pattern. A
             membersAffected.append(interaction.guild.get_member(attackingUser.UserID))
             membersAffected.append(random.choice(interaction.guild.members))
             membersAffected.append(random.choice(interaction.guild.members))
+        msg = giveLoot(attackingUser, pvpDatabase, membersAffected)
         await dealDamage(interaction, membersAffected, pvpDatabase)
         defendingUser = pvpDatabase.getUser(defendingUser.UserID)
         
-        # Give attacker loot
-        msg = giveLoot(attackingUser, pvpDatabase, membersAffected)
         await interaction.delete_original_response()
         await interaction.channel.send(content=f"{msg}")
 
