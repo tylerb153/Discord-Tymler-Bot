@@ -640,8 +640,7 @@ async def battles(interaction: discord.Interaction, member: discord.Member = Non
     if not member:
         member = interaction.user
     user = pvpDatabase.getUser(member.id)
-    attacks = pvpDatabase.getAttacks()
-    attacks.reverse()
+    attacks = sorted(pvpDatabase.getAttacks(), key=lambda x: x.Winner is None, reverse=True)
     msg = f'## {member.mention}\'s Previous Battles:\n**Attacker v. Defender**\n'
     battlesInSet = 0
     for attack in attacks:

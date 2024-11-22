@@ -5,3 +5,4 @@
 *.db
 __pycache__
 log.txt
+test.py
