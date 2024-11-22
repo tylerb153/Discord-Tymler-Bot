@@ -36,15 +36,15 @@ class User:
     Intelligence: int
     Charisma: int
 
-    def __init__(self, userID, amountOfDeaths, health, inventory) -> None:
+    def __init__(self, userID, amountOfDeaths, health, inventory, strength, dexterity, intelligence, charisma) -> None:
         self.UserID = userID
         self.AmountOfDeaths = amountOfDeaths
         self.Health = health
         self.Inventory = inventory
-        self.Strength = random.randint(1, 10)
-        self.Dexterity = random.randint(1, 10)
-        self.Intelligence = random.randint(1, 10)
-        self.Charisma = random.randint(1, 10)
+        self.Strength = strength
+        self.Dexterity = dexterity
+        self.Intelligence = intelligence
+        self.Charisma = charisma
 
     def __str__(self) -> str:
         return f"UserID: {self.UserID}, AmountOfDeaths: {self.AmountOfDeaths}, Health: {self.Health}, Loot: {self.Inventory}, Strength: {self.Strength}, Dexterity: {self.Dexterity}, Intelligence: {self.Intelligence}, Charisma: {self.Charisma}"
@@ -89,16 +89,21 @@ class DatabaseManager:
         self.cursor.execute("CREATE TABLE IF NOT EXISTS Attack (AttackID INTEGER PRIMARY KEY, AttackingUserID INTEGER, DefendingUserID INTEGER, Type TEXT, Description TEXT, Complete BOOLEAN DEFAULT False, Winner TEXT DEFAULT NULL, FOREIGN KEY (AttackingUserID) REFERENCES User(UserID), FOREIGN KEY (DefendingUserID) REFERENCES User(UserID))")
         self.cursor.execute("CREATE TABLE IF NOT EXISTS Loot (LootName TEXT PRIMARY KEY, LootDescription TEXT, Consumable BOOLEAN, attackRarity INTEGER, vcRarity INTEGER)")
         implementedLoot = (
-            ("Gold", "Is shiny", "False", "70", "0"), 
-            ("Health Potion", "Adds 1 Health", "True", "33", "20"), 
-            ("Steroids", "Adds 1 Strength", "True", "20", "15"), 
-            ("Weed", "Adds 1 Charisma", "True", "20", "15"), 
-            ("Shrooms", "Adds 1 Intelligence", "True", "20", "15"), 
-            ("Potion of Swiftness", "Adds 1 Dexterity", "True", "20", "15"), 
-            ("Totem of Undying", "When you die the totem takes your place", "False", "10", "10"), 
-            ("Forcefield", "You won't take damage the next time you are hit", "False", "5", "5")
+            ("Gold", "Is shiny", False, "70", "0"), 
+            ("Health Potion", "Adds 1 Health", True, "33", "20"), 
+            ("Steroids", "Adds 1 Strength", True, "20", "15"), 
+            ("Weed", "Adds 1 Charisma", True, "20", "15"), 
+            ("Shrooms", "Adds 1 Intelligence", True, "20", "15"), 
+            ("Potion of Swiftness", "Adds 1 Dexterity", True, "20", "15"), 
+            ("Totem of Undying", "When you die the totem takes your place", False, "10", "10"), 
+            ("Forcefield", "You won't take damage the next time you are hit", False, "5", "5")
         )
         self.cursor.executemany("INSERT OR IGNORE INTO Loot (LootName, LootDescription, Consumable, attackRarity, vcRarity) VALUES (?, ?, ?, ?, ?)", implementedLoot)
+        for lootType in implementedLoot:
+            self.cursor.execute(f"PRAGMA table_info(UserLoot)")
+            columns = [row[1] for row in self.cursor.fetchall()]
+            if lootType[0] not in columns:
+                self.cursor.execute(f"ALTER TABLE UserLoot ADD `{lootType[0]}` INTEGER DEFAULT 0")
         self.connection.commit()
         
 
@@ -140,7 +145,7 @@ class DatabaseManager:
             if amount != 0:
                 userLoot.update({loot: amount})
         
-        user = User(response[0][0], response[0][1], response[0][2], userLoot )
+        user = User(response[0][0], response[0][1], response[0][2], userLoot, response[0][3], response[0][4], response[0][5], response[0][6])
         return user
     
     def createAttack(self, attackingUser: User, defendingUser: User, Type: str, attackDescription: str) -> Attack:
@@ -203,7 +208,7 @@ class DatabaseManager:
         self.cursor.execute(f"ALTER TABLE UserLoot ADD '{lootName}' INTEGER DEFAULT 0")
         self.connection.commit()
 
-    def useLoot(self, user: User, lootToRemove: Loot):
+    def useLoot(self, user: User, lootToRemove: Loot) -> User:
         newValue = user.Inventory.get(lootToRemove) - 1
 
         lootList: list[Loot] = self.getLootTable()
@@ -223,8 +228,10 @@ class DatabaseManager:
             self.updateUserStats(user, dexterity = user.Dexterity + 1)
         else:
             raise NotImplementedError(f'{lootToRemove.Name} is not implemented')
+        
+        return self.getUser(user.UserID)
 
-    def updateUserStats(self, user: User, strength: Optional[int], dexterity: Optional[int], intelligence: Optional[int], charisma: Optional[int]):
+    def updateUserStats(self, user: User, strength: int = None, dexterity: int = None, intelligence: int = None, charisma: int = None):
         if strength:
             self.cursor.execute(f"UPDATE User SET Strength = {strength} WHERE UserID = {user.UserID}")
         if dexterity:
@@ -238,7 +245,7 @@ class DatabaseManager:
 if __name__ == "__main__":
     db = DatabaseManager()
     # print(db.cursor.execute("SELECT * FROM User").fetchall())
-    # print(db.getUser(1).Inventory)
+    # print(db.getUser(1))
     # for item in db.getUser(1).Inventory.items():
     #     print(item.Name)
     # print(db.getUser(875963554803646514))

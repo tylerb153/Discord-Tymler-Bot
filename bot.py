@@ -378,6 +378,9 @@ Once you have an attack and description return this information in a json object
     response = json.loads('{"AttackType": "AOE", "Description": "Under the cover of chaos, the hero tore apart an old microwave, yanking out the magnetron and rigging it into a makeshift energy weapon using stripped wires, a broken drone battery, and a shattered binocular lens to focus the beam. As the enemy closed in, they flipped the jerryrigged device on, unleashing a searing pulse of concentrated microwaves that superheated metal and fried electronics in a crackling burst of destruction. Each blast from the improvised weapon sent waves of devastation through the ranks, leaving a smoking path of victory in its wake."}')
     try:
         # print(attackDescription)
+        if interaction.user.nick == None:
+            await interaction.user.edit(nick=interaction.user.name)
+
         aiResponse = ai.chat([f'{{"Attacker": "{interaction.user.nick}", "Defender": "{interaction.guild.get_member(defendingUser.UserID).nick}", "Description": "{attackDescription}", "AttackerStats": ("Strength: {attacker.Strength}", "Dexterity: {attacker.Dexterity}", "Intelligence: {attacker.Intelligence}", "Charisma: {attacker.Charisma}")}}', "Remember do not under any circumstances mentions who wins, or if the attack lands. You are a DM and you are supposed to be explaining the attack. So the Defender can specify thier defense"])
         log(aiResponse)
         response = json.loads(aiResponse)
@@ -492,6 +495,8 @@ Always return the defense you came up with in a json object with this pattern. A
     aiResponse = ""
     response = json.loads('{"SuccessfulAttack": "True", "Description": "Anticipating the swing, the cornered warrior ducked just as the chair splintered against the wall behind them, dodging the blow with a smirk. They rolled to the side, grabbing their comically large hammer—nearly twice their own height—and hoisted it with a theatrical flourish. With a grunt, they brought it down in a slow, exaggerated arc, forcing their opponent to scramble away, tripping over the debris in a desperate bid to avoid the absurdly oversized weapon."}')
     try:
+        if interaction.user.nick == None:
+            await interaction.user.edit(nick=interaction.user.name)
         aiResponse = ai.chat([f'{{"Attacker": "{interaction.guild.get_member(attackingUser.UserID).nick}", "Defender": "{interaction.guild.get_member(defendingUser.UserID).nick}", "Attack": "{currentAttack.Description}", "DefenseDescription": "{defenseDescription}", "AttackerStats": ("Strength: {attackingUser.Strength}", "Dexterity: {attackingUser.Dexterity}", "Intelligence: {attackingUser.Intelligence}", "Charisma: {attackingUser.Charisma}"), "DefenderStats": ("Strength: {defendingUser.Strength}", "Dexterity: {defendingUser.Dexterity}", "Intelligence: {defendingUser.Intelligence}", "Charisma: {defendingUser.Charisma}")}}'])
         log(aiResponse)
         response = json.loads(aiResponse)
@@ -543,15 +548,15 @@ async def dealDamage(interaction: discord.Interaction, membersAffected: list[dis
             newHealth = user.Health
             #use a forcefield if a user has one
             try:
-                if user.Inventory['Forcefield'] > 0:
-                    forcefieldToRemove = None
-                    for loot in user.Inventory:
-                        if loot.Name == 'Forcefield':
-                            forcefieldToRemove = loot
-                            await interaction.channel.send(content=f'{member.mention} used a {loot.Name}', silent=True)
-                            break
-                    pvpDatabase.removeLoot(user, forcefieldToRemove)
-                else:
+                usedForcefield = False
+                for loot in user.Inventory:
+                    if loot.Name == 'Forcefield':
+                        forcefieldToRemove = loot
+                        await interaction.channel.send(content=f'{member.mention} used a {loot.Name}', silent=True)
+                        pvpDatabase.removeLoot(user, forcefieldToRemove)
+                        usedForcefield = True
+                        break
+                if not usedForcefield:
                     newHealth = user.Health - 1
             except:
                 newHealth = user.Health - 1
@@ -559,23 +564,27 @@ async def dealDamage(interaction: discord.Interaction, membersAffected: list[dis
                 newHealth = 3
                 #Use a totem of undying if a user has one
                 try:
-                    if user.Inventory['Totem of Undying'] > 0:
-                        totemToRemove = None
-                        for loot in user.Inventory:
-                            if loot.Name == 'Totem of Undying':
-                                totemToRemove = loot
-                                await interaction.channel.send(content=f'{member.mention} used a {loot.Name}', silent=True)
-                                break
-                        pvpDatabase.removeLoot(user, totemToRemove)
-                    else:
+                    usedTotem = False
+                    for loot in user.Inventory:
+                        if loot.Name == 'Totem of Undying':
+                            totemToRemove = loot
+                            await interaction.channel.send(content=f'{member.mention} used a {loot.Name}', silent=True)
+                            usedTotem = True
+                            pvpDatabase.removeLoot(user, totemToRemove)
+                            break
+                    if not usedTotem:
                         pvpDatabase.updateDeaths(user, user.AmountOfDeaths + 1)
                         pvpDatabase.updateUserStats(user, random.randint(1, 10), random.randint(1, 10), random.randint(1, 10), random.randint(1, 10))
-                except:
+                except Exception as e:
+                    await dmTyler(f"I ran into a problem with the totem of undying\n{e}")
                     pvpDatabase.updateDeaths(user, user.AmountOfDeaths + 1)
                     pvpDatabase.updateUserStats(user, random.randint(1, 10), random.randint(1, 10), random.randint(1, 10), random.randint(1, 10))
                 
                 user = pvpDatabase.getUser(user.UserID)
                 try:
+                    newNick = f'{member.nick} {user.AmountOfDeaths + 1}'
+                    if member.nick.endsWith(str(user.AmountOfDeaths - 1)):
+                        newNick = newNick[:-2]
                     await member.edit(nick=f'{member.nick} {user.AmountOfDeaths + 1}')
                 except Exception as e:
                     await dmTyler(f'Failed to edit nick in on_member_update I was trying to change it to **{member.nick} {user.AmountOfDeaths + 1}**:\n{e}')
@@ -711,10 +720,14 @@ async def item_selected(interaction: discord.Interaction, originalInteraction: d
             lootRemoved = loot
             break
     try:
-        pvpDatabase.useLoot(user, lootRemoved)
+        user = pvpDatabase.useLoot(user, lootRemoved)
         if lootRemoved.Name == "Health Potion":
             await updateHealthRoles(interaction.user)
-        await interaction.channel.send(content=f"{interaction.user.mention} used a {interaction.data['values'][0]}")
+            await interaction.channel.send(content=f'{interaction.user.mention} used a Health Potion. They now have {user.Health} Health')
+        else:
+            await interaction.channel.send(content=f"{interaction.user.mention} used a {interaction.data['values'][0]}")
+        
+        del pvpDatabase
     except Exception as e:
         print(e)
         await dmTyler(f"Using an item failed with error:\n{e}")
@@ -1219,6 +1232,8 @@ async def on_voice_state_update(member, before, after):
 ## Detect when a member is updated ##
 @client.event
 async def on_member_update(before: discord.Member, after: discord.Member):
+    if after.nick == None:
+            await after.edit(nick=after.name)
     if after != client.user and before.nick != after.nick:
         amountOfDeaths = int(DatabaseManager().getUser(after.id).AmountOfDeaths)
         if after.nick.endswith(str(amountOfDeaths + 1)) or amountOfDeaths == 0:
