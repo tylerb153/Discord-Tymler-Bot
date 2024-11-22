@@ -193,10 +193,12 @@ class DatabaseManager:
         self.cursor.execute(f"UPDATE User SET AmountOfDeaths = {newDeaths} WHERE UserID = {user.UserID}")
         self.connection.commit()
 
-    def giveLoot(self, user: User, lootList: dict[Loot: int]):
+    def giveLoot(self, user: User, lootList: dict[Loot: int]) -> User:
         for loot, amount in lootList.items():
-            self.cursor.execute(f'UPDATE UserLoot SET \'{loot.Name}\' = {amount} WHERE UserID = {user.UserID}')
+            newAmount = user.Inventory.get(loot) + amount
+            self.cursor.execute(f'UPDATE UserLoot SET \'{loot.Name}\' = {newAmount} WHERE UserID = {user.UserID}')
         self.connection.commit()
+        return self.getUser(user.UserID)
 
     def removeLoot(self, user: User, lootToRemove: Loot):
         newValue = user.Inventory.get(lootToRemove) - 1
