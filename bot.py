@@ -342,7 +342,7 @@ async def preformAttack(interaction: discord.Interaction, defendingUser: databas
     if not interaction.response.is_done():
         await interaction.response.defer(thinking=True)
 
-    if interaction.guild.get_member(defendingUser.UserID) == client.user:
+    if interaction.guild.get_member(defendingUser.UserID) == client.user or defendingUser.UserID == 1314736871594528829:
             response = "You can't attack me I am a ***GOD*** here"
             randomMember = random.choice(interaction.guild.members)
             try:
