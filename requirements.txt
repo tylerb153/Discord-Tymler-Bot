@@ -1,0 +1,8 @@
+discord.py
+mcrcon
+yt-dlp
+requests
+dotenv
+databaseManager
+openai
+tiktoken
