@@ -5,7 +5,7 @@ import os
 import asyncio
 from mcrcon import MCRcon
 from botSupport.errorHandling import dmTyler
-from botSupport.globalVariables import tylerUserID, client as globalClient
+from botSupport.globalVariables import tylerUserID
 
 async def getServerRunning() -> bool:
     ssh_command = ['ssh', f'{os.getenv("SSH_USERNAME")}@{os.getenv("SSH_HOSTNAME")}', f'bash {os.getenv("SSH_SCRIPT_PATH")}/serverStatus.sh']

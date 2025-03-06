@@ -16,7 +16,6 @@ import botSupport.clientEvents.messageSent as messageSent
 from botSupport.botSounds import playRandomSoundLoop
 from botSupport.botStatus import changeStatusLoop, changeStatus
 import botSupport.globalVariables as globalVariables
-from botSupport.errorHandling import dmTyler as dmTylerAMessage
 
 dotenv.load_dotenv()
 TOKEN = os.getenv('DISCORD_BOT_TOKEN')
