@@ -1,4 +1,4 @@
-# .gitignore
+.gitignore
 .env
 .DS_Store
 .vscode

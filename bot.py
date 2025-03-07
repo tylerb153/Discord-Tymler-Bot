@@ -169,8 +169,11 @@ async def on_member_update(before: discord.Member, after: discord.Member):
 ## Detect when a message is sent ##
 @client.event
 async def on_message(message):
-    await messageSent.enforceTheKellieRule(message)
-    await messageSent.clientMentioned(message)
+    try:
+        await messageSent.enforceTheKellieRule(message)
+    except Exception as e:
+        await dmTyler(f'Could not enforce The Kellie Rule: \n{e}')
+
 
 ## Start automatic tasks ##
 @client.event

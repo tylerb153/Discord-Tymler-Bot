@@ -5,9 +5,15 @@ import botSupport.globalVariables
 async def enforceTheKellieRule(message: discord.Message):
     client = botSupport.globalVariables.client
     ## Process message to change 'y' to 'ie' ##
+    # Also handles client mentions do to having to reply to a modified message
+    # print(message)
     if message.author == client.user:
         return
-    
+    meMentioned = False
+    if client.user in message.mentions:
+        meMentioned = True
+
+    ## Process message to change 'y' to 'ie' ##
     messages = message.content.split(" ")
     userString = ""
     messageChanged = False
@@ -39,7 +45,15 @@ async def enforceTheKellieRule(message: discord.Message):
         else:
             message = await message.channel.send(userString + f" - {message.author.mention}")
 
+    if meMentioned:
+        with open('mentionResponses.txt', 'r') as file:
+            responses = file.readlines()
+            randomResponse = random.choice(responses).strip()
+            await message.reply(content=f'{randomResponse}')
 
+
+
+## Unused: Handled by enforceTheKellieRule ##
 async def clientMentioned(message: discord.Message):
     client = botSupport.globalVariables.client
     if message.author == client.user:
