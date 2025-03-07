@@ -16,6 +16,7 @@ import botSupport.clientEvents.messageSent as messageSent
 from botSupport.botSounds import playRandomSoundLoop
 from botSupport.botStatus import changeStatusLoop, changeStatus
 import botSupport.globalVariables as globalVariables
+from botSupport.errorHandling import dmTyler
 
 dotenv.load_dotenv()
 TOKEN = os.getenv('DISCORD_BOT_TOKEN')
@@ -28,32 +29,36 @@ tree = app_commands.CommandTree(client)
 ####        Server Commands        ####
 @tree.command(name='whitelist', description='Add your minecraft username to the whitelist')
 async def whitelist(interaction: discord.Interaction, username: str):
-    await server.whitelist(interaction, username)
+    try:
+        await server.whitelist(interaction, username)
+    except Exception as e:
+        await dmTyler(e)
         
 serverGroup = app_commands.Group(name="server", description='Contains commands that affect the minecraft server.')
 
 @serverGroup.command(name='status', description='Returns whether the server is up and running or not.')
 async def status(interaction: discord.Interaction):
-    await server.status(interaction)
-
-@serverGroup.command(name="start", description="If the minecraft server is down start it.")
-async def start(interaction: discord.Interaction):
-    await server.start(interaction)
+    try:
+        await server.status(interaction)
+    except Exception as e:
+        await dmTyler(e)
 
 ####        Jacob Commands        ####
 jacobGroup = app_commands.Group(name="jacob", description="Commands for Jacob")
 @jacobGroup.command(name="skitzing", description="Title and subtitle for minecraft server... HUH?!")
 async def skitzing(interaction: discord.Interaction, title: str, subtitle: str = ""):
-    await jacob.skitzing(interaction, title, subtitle)
+    try:
+        await jacob.skitzing(interaction, title, subtitle)
+    except Exception as e:
+        await dmTyler(e)
 
 ####        Admin Commands        ####
 adminGroup = app_commands.Group(name="admin", description="Commands that only the admins can use")
-@adminGroup.command(name="stop", description="If the minecraft server is running stop it.")
-async def stop(interaction: discord.Interaction):
-    await server.stop(interaction)
 
 @adminGroup.command(name='backup', description='Backs up the minecraft server')
 async def backup(interaction: discord.Interaction):
+    await interaction.response.send_message(content="This is still a work in progress", ephemeral=True)
+    return
     await server.backup(interaction)
 
 @adminGroup.command(name='disconnect', description='Disconnects the bot from the voice channel')
@@ -70,7 +75,10 @@ async def play_sound(interaction: discord.Interaction):
 
 @adminGroup.command(name="op", description="Gives user operator privliges")
 async def op(interaction: discord.Interaction, username: str):
-    await server.op(interaction, username)
+    try:
+        await server.op(interaction, username)
+    except Exception as e:
+        await dmTyler(e)
     
 ####        Role Commands        ####
 roleGroup = app_commands.Group(name='role', description='Manages user roles')

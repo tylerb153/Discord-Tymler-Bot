@@ -8,7 +8,7 @@ async def changeStatusLoop():
     while not client.is_closed():
         await asyncio.sleep(random.randint(10, 3600))
         print("Changing status")
-        await changeStatus(client)
+        await changeStatus()
 
 async def changeStatus():
     client = botSupport.globalVariables.client
