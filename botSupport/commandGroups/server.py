@@ -89,7 +89,7 @@ async def op(interaction: discord.Interaction, username: str):
                 resp = mcr.command(f'/op {username}')
                 await interaction.edit_original_response(content=resp)
         else:
-            raise Exception('There is a problem with the minecraft server or op command')
+            raise Exception('There is a problem with the op command or the minecraft server is offline check /server status')
     except Exception as e:
         await interaction.edit_original_response(content=f"I couldn't give operator privliges to {username} :sob:")
         raise Exception(f'An error occured in the op command with error:\n{e}')
