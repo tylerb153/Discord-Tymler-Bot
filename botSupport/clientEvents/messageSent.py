@@ -7,7 +7,7 @@ async def enforceTheKellieRule(message: discord.Message):
     ## Process message to change 'y' to 'ie' ##
     # Also handles client mentions do to having to reply to a modified message
     # print(message)
-    if message.author == client.user:
+    if message.author == client.user or message.channel.id in [1081167754746408960, 1228410126281740349]:
         return
     meMentioned = False
     if client.user in message.mentions:

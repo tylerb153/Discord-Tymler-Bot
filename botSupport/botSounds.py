@@ -60,6 +60,8 @@ async def playRandomSound(channel: discord.VoiceChannel):
         await channel.connect(timeout=30, reconnect=True)
         botVC = channel.guild.voice_client
     
+    asyncio.sleep(2)
+
     if nickname != None:
         async def cleanup(previousNickname):
             await botVC.disconnect()
