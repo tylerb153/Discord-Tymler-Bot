@@ -149,6 +149,10 @@ async def fix_defense(interaction: discord.Interaction, attack_id: int, defense_
 async def adjust_rarity(interaction: discord.Interaction, loot_name: str, attack_rarity: int, vc_rarity: int):
     await pvpAdmin.adjust_rarity(interaction, loot_name, attack_rarity, vc_rarity)
 
+@pvpAdminGroup.command(name="reset", description="Reset pvp and the database")
+async def reset_pvp(interaction: discord.Interaction):
+    await pvpAdmin.reset_pvp(interaction)
+
 ####        Mention Commands        ####
 mentionGroup = app_commands.Group(name='random', description='"@" a random person in the discord server')
 @mentionGroup.command(name='mention', description='"@" a random person in the discord server')
@@ -169,10 +173,14 @@ async def on_member_update(before: discord.Member, after: discord.Member):
 ## Detect when a message is sent ##
 @client.event
 async def on_message(message):
+    # try:
+    #     await messageSent.enforceTheKellieRule(message)
+    # except Exception as e:
+    #     await dmTyler(f'Could not enforce The Kellie Rule: \n{e}')
     try:
-        await messageSent.enforceTheKellieRule(message)
-    except Exception as e:
-        await dmTyler(f'Could not enforce The Kellie Rule: \n{e}')
+        await messageSent.clientMentioned(message)
+    except Exception as e: 
+        await dmTyler(f'Could not respond to message:\n{e}')
 
 
 ## Start automatic tasks ##

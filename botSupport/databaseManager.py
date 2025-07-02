@@ -244,6 +244,13 @@ class DatabaseManager:
             self.cursor.execute(f"UPDATE User SET Charisma = {charisma} WHERE UserID = {user.UserID}")
         self.connection.commit()
 
+    def reset(self):
+        self.cursor.execute("DROP TABLE User")
+        self.cursor.execute("DROP TABLE UserLoot")
+        self.cursor.execute("DROP TABLE Attack")
+        self.cursor.execute("DROP TABLE Loot")
+        
+
 if __name__ == "__main__":
     db = DatabaseManager()
     # print(db.cursor.execute("SELECT * FROM User").fetchall())

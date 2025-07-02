@@ -4,6 +4,8 @@ from typing import Optional
 from botSupport.databaseManager import DatabaseManager
 from botSupport.commandGroups.pvp import dealDamage, giveLoot
 import botSupport.globalVariables as gv
+from botSupport.errorHandling import dmTyler
+import re
 
 async def pvp_enable(interaction: discord.Interaction):
     gv.pvp = True
@@ -58,3 +60,25 @@ async def adjust_rarity(interaction: discord.Interaction, loot_name: str, attack
     pvpDatabase = DatabaseManager()
     pvpDatabase.editRarity(loot_name, attack_rarity, vc_rarity)
     await interaction.edit_original_response(content=f"{loot_name} rarity adjusted")
+
+async def reset_pvp(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    # Delete data in database
+    DatabaseManager().reset()
+
+    # Reset nicknames / remove roles
+    members = interaction.guild.members
+    for member in members:
+        print(member.nick)
+        try:
+            nickname = member.nick
+            if nickname and re.search(r' \d+$', nickname):
+                nickname = re.sub(r' \d+$', '', nickname)
+                await member.edit(nick=f'{nickname}')
+
+            await member.remove_roles(discord.Object(id=gv.healthRoles[0]), discord.Object(id=gv.healthRoles[1]), discord.Object(id=gv.healthRoles[2]))
+
+        except Exception as e:
+            await dmTyler(f'Error reseting pvp: \n{e}')
+
+    

@@ -2,6 +2,7 @@ import discord
 import random
 import botSupport.globalVariables
 
+## Unused: Makes conversations hard to track, which is funny ##
 async def enforceTheKellieRule(message: discord.Message):
     client = botSupport.globalVariables.client
     ## Process message to change 'y' to 'ie' ##
@@ -53,7 +54,6 @@ async def enforceTheKellieRule(message: discord.Message):
 
 
 
-## Unused: Handled by enforceTheKellieRule ##
 async def clientMentioned(message: discord.Message):
     client = botSupport.globalVariables.client
     if message.author == client.user:
