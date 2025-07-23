@@ -9,6 +9,7 @@ import botSupport.commandGroups.role as roleFunctions
 import botSupport.commandGroups.admin as admin
 import botSupport.commandGroups.pvp as pvp
 import botSupport.commandGroups.pvpAdmin as pvpAdmin
+import botSupport.leave as leave
 from botSupport.commandGroups.mention import mention as mentionUser
 from botSupport.clientEvents.voiceStateUpdate import playSoundWhenTylerJoinsVC
 from botSupport.clientEvents.memberUpdate import forcePVPDeaths
@@ -153,6 +154,13 @@ async def adjust_rarity(interaction: discord.Interaction, loot_name: str, attack
 async def reset_pvp(interaction: discord.Interaction):
     await pvpAdmin.reset_pvp(interaction)
 
+@tree.command(name='outro', description='Kick everyone from your current VC')
+async def leaveVC(interaction: discord.Interaction):
+    try:
+        await leave.leaveVC(interaction)
+    except Exception as e:
+        await dmTyler(e)
+
 ####        Mention Commands        ####
 mentionGroup = app_commands.Group(name='random', description='"@" a random person in the discord server')
 @mentionGroup.command(name='mention', description='"@" a random person in the discord server')
@@ -203,6 +211,7 @@ async def on_ready():
     tree.add_command(jacobGroup)
     tree.add_command(pvpGroup)
     tree.add_command(pvpAdminGroup)
+    tree.add_command(leaveVC)
     await tree.sync()
     
     await changeStatus()

@@ -3,6 +3,7 @@ import os
 import platform
 import asyncio
 import random
+import ctypes.util
 from typing import Optional
 import botSupport.globalVariables
 
@@ -19,7 +20,7 @@ async def playRandomSoundLoop():
 
 def loadOpus():
     if platform.system() == 'Darwin':
-                discord.opus.load_opus('/opt/homebrew/Cellar/opus/1.5.1/lib/libopus.0.dylib')
+                discord.opus.load_opus('/opt/homebrew/Cellar/opus/1.5.2/lib/libopus.0.dylib')
     elif platform.system() == 'Linux':
         discord.opus.load_opus('libopus.so.0')
 

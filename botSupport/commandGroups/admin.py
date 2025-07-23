@@ -15,7 +15,7 @@ async def disconnect(interaction: discord.Interaction):
         await botVC.disconnect()
     except Exception as e:
         print(f'Exception occured in disconnect()\n{e}')
-        await dmTyler(client, f'Exception occured in disconnect()\n{e}')
+        await dmTyler(f'Exception occured in disconnect()\n{e}')
     await interaction.delete_original_response()
 
 async def set_status(interaction: discord.Interaction, status: str):
