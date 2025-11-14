@@ -15,4 +15,8 @@ COPY . .
 
 RUN pip3 install -r requirements.txt
 
+RUN pip uninstall -y "discord.py"
+RUN apt install git -y
+RUN pip install "git+https://github.com/Rapptz/discord.py@master"
+
 CMD ["python3", "bot.py"]

@@ -10,6 +10,7 @@ import botSupport.commandGroups.admin as admin
 import botSupport.commandGroups.pvp as pvp
 import botSupport.commandGroups.pvpAdmin as pvpAdmin
 import botSupport.leave as leave
+import botSupport.commandGroups.media as media
 from botSupport.commandGroups.mention import mention as mentionUser
 from botSupport.clientEvents.voiceStateUpdate import playSoundWhenTylerJoinsVC
 from botSupport.clientEvents.memberUpdate import forcePVPDeaths
@@ -161,6 +162,15 @@ async def leaveVC(interaction: discord.Interaction):
     except Exception as e:
         await dmTyler(e)
 
+####        Media Commands        ####
+mediaGroup = app_commands.Group(name='media', description='Control Tymler\'s music capabilities')
+@mediaGroup.command(name="play", description="Resume/Start playing media or add to the queue")
+async def play(interaction: discord.Interaction, url: str = None):
+    try:
+        await media.play(interaction, url)
+    except Exception as e:
+        await dmTyler(e)
+
 ####        Mention Commands        ####
 mentionGroup = app_commands.Group(name='random', description='"@" a random person in the discord server')
 @mentionGroup.command(name='mention', description='"@" a random person in the discord server')
@@ -205,8 +215,8 @@ async def on_ready():
     tree.add_command(whitelist)
     tree.add_command(serverGroup)
     tree.add_command(roleGroup)
-    # tree.add_command(mediaGroup)
     tree.add_command(adminGroup)
+    tree.add_command(mediaGroup)
     tree.add_command(mentionGroup)
     tree.add_command(jacobGroup)
     tree.add_command(pvpGroup)

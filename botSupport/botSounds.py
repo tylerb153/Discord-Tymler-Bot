@@ -3,7 +3,6 @@ import os
 import platform
 import asyncio
 import random
-import ctypes.util
 from typing import Optional
 import botSupport.globalVariables
 
@@ -20,7 +19,7 @@ async def playRandomSoundLoop():
 
 def loadOpus():
     if platform.system() == 'Darwin':
-                discord.opus.load_opus('/opt/homebrew/Cellar/opus/1.5.2/lib/libopus.0.dylib')
+        discord.opus.load_opus('/opt/homebrew/Cellar/opus/1.5.2/lib/libopus.0.dylib')
     elif platform.system() == 'Linux':
         discord.opus.load_opus('libopus.so.0')
 
@@ -61,7 +60,7 @@ async def playRandomSound(channel: discord.VoiceChannel):
         await channel.connect(timeout=30, reconnect=True)
         botVC = channel.guild.voice_client
     
-    asyncio.sleep(2)
+    await asyncio.sleep(1)
 
     if nickname != None:
         async def cleanup(previousNickname):

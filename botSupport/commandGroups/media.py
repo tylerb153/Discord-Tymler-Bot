@@ -1,31 +1,31 @@
 import discord
-import platform
+import botSupport.audioManager as audioManager
 
-async def play(interaction: discord.Interaction, url: str = ''):
+async def play(interaction: discord.Interaction, url = str|None):
     await interaction.response.defer()
     userVC = interaction.user.voice
+    botVC: discord.VoiceClient = interaction.guild.voice_client
     if not userVC:
         await interaction.edit_original_response(content=f'You are not in a voice channel!')
-        return
-    if not discord.opus.is_loaded():
-        if platform.system() == 'Windows':
-            pass
-        else:
-            discord.opus.load_opus('/opt/homebrew/Cellar/opus/1.5.1/lib/libopus.0.dylib')
-    botVC: discord.VoiceClient = interaction.guild.voice_client
-    if not (botVC and botVC.is_connected()):
-        try:
-            botVC = await interaction.user.voice.channel.connect()
-            print(f'Joined {userVC.channel.name}')
-        except Exception as e:
-            print(f'Error in connecting to {userVC.channel.name}\n{e}')
-            await interaction.edit_original_response(content=f'Failed to connect to {userVC.channel.name}')
-            return
-
-    if botVC.is_paused():
+    
+    elif url == None and botVC and botVC.is_paused():
         botVC.resume()
         await interaction.edit_original_response(content=f'Resuming audio')
-        return
+    
+    elif url == None and botVC and not botVC.is_paused():
+        await interaction.edit_original_response(content=f'Audio is playing already. Enter a url to queue something')
+    
+    elif url and (botVC == interaction.user.voice.channel or botVC == None):
+        await interaction.edit_original_response(content=f'Added {url} to the queue!')
+        try:
+            await audioManager.addAudio(interaction, discord.FFmpegPCMAudio('Sounds/The Great Rubber Chicken Galop - Randall Standridge (Concert Band, Grade 2.5).mp3'))    
+        except Exception as e:
+            raise Exception(f"Failed to call addAudio \n{e}")
+    else:
+        await interaction.edit_original_response(content="Please provide a url to begin playing audio")
+    return
+    
+    # get youtube audio and send to queue
 
     # https://www.youtube.com/playlist?list=PLZCI3QwWlHdSNssf8Wue0AGQhFRqPUhZj
     if 'playlist' in url:
@@ -83,7 +83,7 @@ async def play(interaction: discord.Interaction, url: str = ''):
             await interaction.edit_original_response(content=f'Could not play {url}')
             print(e)
 
-@mediaGroup.command(name='leave', description='Force the bot to leave the channel at all costs')
+# @mediaGroup.command(name='leave', description='Force the bot to leave the channel at all costs')
 async def leave(interaction: discord.Interaction):
     await interaction.response.defer()
     try:
@@ -94,7 +94,7 @@ async def leave(interaction: discord.Interaction):
         await interaction.edit_original_response(content=f'Could not disconnect')
         print(f'Could not disconnect voice client in {interaction.guild.name}: {interaction.guild.id}\n{e}')
 
-@mediaGroup.command(name='stop', description='Stops playing audio')
+# @mediaGroup.command(name='stop', description='Stops playing audio')
 async def stop(interaction: discord.Interaction):
     await interaction.response.defer()
     userVC = interaction.user.voice
@@ -110,7 +110,7 @@ async def stop(interaction: discord.Interaction):
         await interaction.edit_original_response(content=f'Could not stop audio')
         print(f'Could not stop audio in {interaction.guild.name}: {interaction.guild.id}\n{e}')
 
-@mediaGroup.command(name='pause', description='Pauses playing audio')
+# @mediaGroup.command(name='pause', description='Pauses playing audio')
 async def pause(interaction: discord.Interaction):
     await interaction.response.defer()
     userVC = interaction.user.voice

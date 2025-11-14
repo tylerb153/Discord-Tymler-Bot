@@ -1,3 +1,5 @@
+import discord
+
 ## User ID ##
 tylerUserID = 336959815374864384 #Used in multiple commands
 
@@ -10,4 +12,4 @@ pvp = False
 ## The Minecraft Cult Guild ID ##
 cultGuildID = 554203267001745419
 
-client = None
+client: discord.Client = None
