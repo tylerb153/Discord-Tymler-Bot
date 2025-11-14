@@ -12,25 +12,48 @@ def loadOpus():
         discord.opus.load_opus('libopus.so.0')
 
 async def addAudio(interaction: discord.Interaction, audio: discord.FFmpegPCMAudio):
-    audioQueue.append(audio)
-    await joinVC(interaction)
+    try:
+        audioQueue.append(audio)
+    except Exception as e:
+        raise Exception(f"Could not add audio to queue\n{e}")
+    try:
+        await joinVC(interaction)
+    except Exception as e:
+        raise Exception(f"Failed to call joinVC in addAudio\n{e}")
 
 async def joinVC(interaction: discord.Interaction):
     botVC = interaction.guild.voice_client
-    if botVC == None:
-        loadOpus()
-        botVC = interaction.user.voice.channel
-        await botVC.connect(timeout=30, reconnect=True)
-    await play(interaction)
+    try:
+        if botVC == None:
+            loadOpus()
+            botVC = interaction.user.voice.channel
+            await botVC.connect(timeout=30, reconnect=True)
+    except Exception as e:
+        raise Exception(f"Failed to connect to the voice channel\n{e}")
+    try:
+        await asyncio.sleep(1)
+        await play(interaction)
+    except Exception as e:
+        raise Exception(f"Failed to call play in joinVC\n{e}")
     return
 
 
 async def play(interaction: discord.Interaction):
-    botVC = interaction.guild.voice_client
-
+    botVC: discord.VoiceClient | None = interaction.guild.voice_client
+    if botVC and botVC.is_playing():
+        return
     if audioQueue:
-        botVC.play(audioQueue.pop(0), after=lambda e: gv.client.loop.create_task(play(interaction)))
+        try:
+            botVC.play(audioQueue.pop(0), after=lambda e: gv.client.loop.create_task(play(interaction)))
+        except Exception as e:
+            raise Exception(f"Failed to play audio in audioManager.play\n{e}")
+        try:
+            pass
+            # Report what is playing
+        except:
+            pass
     else:
+        await asyncio.sleep(1)
         await botVC.disconnect()
     
     return

@@ -15,11 +15,12 @@ async def play(interaction: discord.Interaction, url = str|None):
     elif url == None and botVC and not botVC.is_paused():
         await interaction.edit_original_response(content=f'Audio is playing already. Enter a url to queue something')
     
-    elif url and (botVC == interaction.user.voice.channel or botVC == None):
+    elif url and (botVC == None or botVC.channel == interaction.user.voice.channel):
         await interaction.edit_original_response(content=f'Added {url} to the queue!')
         try:
-            await audioManager.addAudio(interaction, discord.FFmpegPCMAudio('Sounds/The Great Rubber Chicken Galop - Randall Standridge (Concert Band, Grade 2.5).mp3'))    
+            await audioManager.addAudio(interaction, discord.FFmpegPCMAudio('Sounds/Look Ma No Hands! Leonard Bernstein at his best....mp3'))    
         except Exception as e:
+            await interaction.edit_original_response(content="Failed to add audio to the queue. I'm sorry :sob:")
             raise Exception(f"Failed to call addAudio \n{e}")
     else:
         await interaction.edit_original_response(content="Please provide a url to begin playing audio")
