@@ -2,7 +2,9 @@ import discord
 import platform
 import asyncio
 from yt_dlp import YoutubeDL
+from botSupport.botStatus import changeStatus
 import botSupport.globalVariables as gv
+from botSupport.errorHandling import dmTyler
 
 audioQueue = []
 
@@ -44,18 +46,23 @@ async def play(botVC: discord.VoiceClient):
         return
     if audioQueue:
         audioTitle, audioURL = await asyncio.to_thread(getAudioStreamInfo, audioQueue.pop(0))
+        
+        try:
+            gv.pauseRandomEvents = True
+            print(f'Changing Status to {audioTitle}')
+            await gv.client.change_presence(activity=discord.Activity(type=discord.ActivityType.custom, name="The Minecraft Cult", state=f'Listening to {audioTitle}'))
+        except Exception as e:
+            await dmTyler(f'Failed to change presence in audioManager.play\n{e}')
+        
         try:
             await asyncio.sleep(1)
             botVC.play(discord.FFmpegPCMAudio(source=audioURL, options=f"-filter:a volume={0.25}"), after=lambda e: gv.client.loop.create_task(play(botVC)))
         except Exception as e:
             raise Exception(f"Failed to play audio in audioManager.play\n{e}")
-        try:
-            pass
-            # Report what is playing
-        except:
-            pass
     else:
         await asyncio.sleep(1)
+        gv.pauseRandomEvents = False
+        await changeStatus()
         await botVC.disconnect()
     
     return

@@ -7,10 +7,12 @@ async def changeStatusLoop():
     client = botSupport.globalVariables.client
     while not client.is_closed():
         await asyncio.sleep(random.randint(10, 3600))
-        print("Changing status")
+        while botSupport.globalVariables.pauseRandomEvents:
+            await asyncio.sleep(60)
         await changeStatus()
 
 async def changeStatus():
+    print("Changing status")
     client = botSupport.globalVariables.client
     with open('botSupport/statuses.txt', 'r') as file:
         statuses = file.readlines()

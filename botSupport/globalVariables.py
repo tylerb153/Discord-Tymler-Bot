@@ -12,4 +12,6 @@ pvp = False
 ## The Minecraft Cult Guild ID ##
 cultGuildID = 554203267001745419
 
+pauseRandomEvents = False
+
 client: discord.Client = None
