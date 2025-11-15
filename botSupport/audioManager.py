@@ -89,3 +89,12 @@ def getAudioStreamInfo(url):
 
 def pause(botVC: discord.VoiceClient):
     botVC.pause()
+
+async def stop(botVC: discord.VoiceClient):
+    await botVC.disconnect()
+    global audioQueue
+    audioQueue = []
+
+async def skip(botVC: discord.VoiceClient):
+    await botVC.stop()
+    await play(botVC)

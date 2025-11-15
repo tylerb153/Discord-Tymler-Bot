@@ -178,6 +178,20 @@ async def pause(interaction: discord.Interaction):
     except Exception as e:
         await dmTyler(e)
 
+@mediaGroup.command(name='stop', description='Stops whatever audio is playing')
+async def stop(interaction: discord.Interaction):
+    try:
+        await media.stop(interaction)
+    except Exception as e:
+        await dmTyler(e)
+
+@mediaGroup.command(name='skip', description='Skips to the next thing in the queue')
+async def skip(interaction: discord.Interaction):
+    try:
+        await media.skip(interaction)
+    except Exception as e:
+        await dmTyler(e)
+
 ####        Mention Commands        ####
 mentionGroup = app_commands.Group(name='random', description='"@" a random person in the discord server')
 @mentionGroup.command(name='mention', description='"@" a random person in the discord server')

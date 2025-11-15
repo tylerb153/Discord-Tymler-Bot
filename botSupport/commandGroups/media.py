@@ -45,6 +45,7 @@ async def pause(interaction: discord.Interaction):
             try:
                 await audioManager.pause(botVC)
             except Exception as e:
+                await interaction.edit_original_response(content=f'I failed to pause the audio playing!')
                 raise Exception(f"Failed to pause music in media.pause\n{e}")
             await interaction.edit_original_response(content=f'Paused the audio playing!')
         elif botVC.is_paused():    
@@ -54,4 +55,40 @@ async def pause(interaction: discord.Interaction):
     else:
         await interaction.edit_original_response(content=f'We aren\'t in the same vc so stop bothering me ☹️')
     
+async def stop(interaction: discord.Interaction):
+    await interaction.response.defer()
+    userVC = interaction.user.voice
+    botVC: discord.VoiceClient | None = interaction.guild.voice_client
+
+    if not userVC:
+        await interaction.edit_original_response(content=f'You are not in a voice channel!')
+    elif botVC == None:
+        await interaction.edit_original_response(content=f'I\'m not in a vc... what am I even supposed to stop?')
+    elif botVC.channel == userVC.channel:
+        try:
+            await audioManager.stop(botVC)
+        except Exception as e:
+                await interaction.edit_original_response(content=f'I failed to stop the audio playing!')
+                raise Exception(f"Failed to stop music in media.stop\n{e}")
+        await interaction.edit_original_response(content=f'Stopped the audio playing!')
+    else:
+        await interaction.edit_original_response(content=f'We aren\'t in the same vc 🙄')
+
+async def skip(interaction: discord.Interaction):
+    userVC = interaction.user.voice
+    botVC: discord.VoiceClient | None = interaction.guild.voice_client
+
+    if not userVC:
+        await interaction.edit_original_response(content=f'You are not in a voice channel!')
+    elif botVC == None:
+        await interaction.edit_original_response(content=f'You tell me what I\'m supposed to skip and I\'ll do it!')
+    elif botVC.channel == userVC.channel:
+        try:
+            await audioManager.skip(botVC)
+        except Exception as e:
+                await interaction.edit_original_response(content=f'I failed to skip the audio playing!')
+                raise Exception(f"Failed to skip music in media.skip\n{e}")
+        await interaction.edit_original_response(content=f'Skipped the audio playing!')
+    else:
+        await interaction.edit_original_response(content=f'We aren\'t in the same vc... just tell me you hate me next time 😔')
 
