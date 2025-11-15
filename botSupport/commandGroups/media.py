@@ -115,3 +115,29 @@ async def shuffle(interaction: discord.Interaction):
             await interaction.edit_original_response(content=f'Deactivated shuffle!')
     else:
         await interaction.edit_original_response(content=f'We aren\'t in the same vc... just tell me you hate me next time 😔')
+
+async def help(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    await interaction.edit_original_response(content='''
+## Media Controls
+### Play
+> The play command accepts youtube links and summons @Tymler#3071 to the VC you are in.
+> If something is playing it will add the url to the queue and play it after.
+> You can submit playlists as well!
+> If a url is not submitted @Tymler#3071 will try to resume any paused media
+
+### Pause
+> Simply pauses anything playing
+
+### Skip
+> Skips to the next link in the queue
+
+### Stop
+> Clears the queue and disconnects @Tymler#3071 
+
+### Shuffle
+>  Toggles shuffle mode where a random url is picked from the queued urls
+> Will not shuffle whatever is currently playing
+
+### Help
+> Brings up this menu''')
