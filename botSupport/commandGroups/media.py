@@ -118,13 +118,13 @@ async def shuffle(interaction: discord.Interaction):
 
 async def help(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
-    await interaction.edit_original_response(content='''
+    await interaction.edit_original_response(content=f'''
 ## Media Controls
 ### Play
-> The play command accepts youtube links and summons @Tymler#3071 to the VC you are in.
+> The play command accepts youtube links and summons {gv.client.user.mention} to the VC you are in.
 > If something is playing it will add the url to the queue and play it after.
 > You can submit playlists as well!
-> If a url is not submitted @Tymler#3071 will try to resume any paused media
+> If a url is not submitted {gv.client.user.mention} will try to resume any paused media
 
 ### Pause
 > Simply pauses anything playing
@@ -133,7 +133,7 @@ async def help(interaction: discord.Interaction):
 > Skips to the next link in the queue
 
 ### Stop
-> Clears the queue and disconnects @Tymler#3071 
+> Clears the queue and disconnects {gv.client.user.mention} 
 
 ### Shuffle
 >  Toggles shuffle mode where a random url is picked from the queued urls
