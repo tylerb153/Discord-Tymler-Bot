@@ -1,6 +1,7 @@
 import discord
 import platform
 import asyncio
+from yt_dlp import YoutubeDL
 import botSupport.globalVariables as gv
 
 audioQueue = []
@@ -32,19 +33,20 @@ async def joinVC(interaction: discord.Interaction):
         raise Exception(f"Failed to connect to the voice channel\n{e}")
     try:
         await asyncio.sleep(1)
-        await play(interaction)
+        await play(interaction.guild.voice_client)
     except Exception as e:
         raise Exception(f"Failed to call play in joinVC\n{e}")
     return
 
 
-async def play(interaction: discord.Interaction):
-    botVC: discord.VoiceClient | None = interaction.guild.voice_client
+async def play(botVC: discord.VoiceClient):
     if botVC and botVC.is_playing():
         return
     if audioQueue:
+        audioTitle, audioURL = await asyncio.to_thread(getAudioStreamInfo, audioQueue.pop(0))
         try:
-            botVC.play(audioQueue.pop(0), after=lambda e: gv.client.loop.create_task(play(interaction)))
+            await asyncio.sleep(1)
+            botVC.play(discord.FFmpegPCMAudio(source=audioURL, options=f"-filter:a volume={0.25}"), after=lambda e: gv.client.loop.create_task(play(botVC)))
         except Exception as e:
             raise Exception(f"Failed to play audio in audioManager.play\n{e}")
         try:
@@ -56,4 +58,26 @@ async def play(interaction: discord.Interaction):
         await asyncio.sleep(1)
         await botVC.disconnect()
     
+    return
+
+
+def getAudioStreamInfo(url):
+    if 'playlist' in url:
+        # loop through the playlist, that's a problem for later fr fr
+        return
+    
+    if 'youtu' in url:
+        ydl_opts = {
+            'outtmpl': 'Sounds/MediaTempFile/%(title)s.%(ext)s',
+            'format': 'bestaudio/best',
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+            }]
+        }
+        with YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url=url, download=False)
+            info = ydl.sanitize_info(info)
+            print(f'Playing URL: {info.get('url')}')
+            return info.get('title'), info.get('url')
     return
