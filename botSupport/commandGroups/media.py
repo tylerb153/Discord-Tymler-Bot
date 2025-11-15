@@ -17,7 +17,7 @@ async def play(interaction: discord.Interaction, url = str|None):
         await interaction.edit_original_response(content=f'Audio is playing already. Enter a url to queue something')
     
     elif url and (botVC == None or botVC.channel == userVC.channel):
-        if re.search(pattern="(https://)?youtu.be*", string=url) != None or re.search(pattern="(https://www.)?youtube.com/watch\?*", string=url) != None:
+        if re.search(pattern="(https://)?youtu.be*", string=url) != None or re.search(pattern="(https://www.)?youtube.com/watch\?*", string=url) != None or re.search(pattern="(https://www.)?youtube.com/playlist\?*", string=url) != None:
             try:
                 await audioManager.addAudio(interaction, url)
             except Exception as e:
@@ -75,6 +75,7 @@ async def stop(interaction: discord.Interaction):
         await interaction.edit_original_response(content=f'We aren\'t in the same vc 🙄')
 
 async def skip(interaction: discord.Interaction):
+    await interaction.response.defer()
     userVC = interaction.user.voice
     botVC: discord.VoiceClient | None = interaction.guild.voice_client
 

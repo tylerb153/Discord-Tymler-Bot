@@ -14,9 +14,12 @@ def loadOpus():
     elif platform.system() == 'Linux':
         discord.opus.load_opus('libopus.so.0')
 
-async def addAudio(interaction: discord.Interaction, audio: discord.FFmpegPCMAudio):
+async def addAudio(interaction: discord.Interaction, url: str):
     try:
-        audioQueue.append(audio)
+        if 'list' in url:
+            await asyncio.to_thread(processPlaylist, url)
+        else:
+            audioQueue.append(url)
     except Exception as e:
         raise Exception(f"Could not add audio to queue\n{e}")
     try:
@@ -67,11 +70,8 @@ async def play(botVC: discord.VoiceClient):
 
 
 def getAudioStreamInfo(url):
-    if 'playlist' in url:
-        # loop through the playlist, that's a problem for later fr fr
-        return
-    
     if 'youtu' in url:
+        # These options aren't necessary
         ydl_opts = {
             'outtmpl': 'Sounds/MediaTempFile/%(title)s.%(ext)s',
             'format': 'bestaudio/best',
@@ -86,6 +86,19 @@ def getAudioStreamInfo(url):
             print(f'Playing URL: {info.get('url')}')
             return info.get('title'), info.get('url')
     return
+
+def processPlaylist(url):
+    ydl_opts = {
+            'extract_flat': True,
+            'ignoreerrors': True,
+        }
+    with YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+        if 'entries' in info:
+            for entry in info['entries']:
+                audioQueue.append(entry['url'])
+        else:
+            audioQueue.append(url)
 
 def pause(botVC: discord.VoiceClient):
     botVC.pause()
