@@ -192,6 +192,13 @@ async def skip(interaction: discord.Interaction):
     except Exception as e:
         await dmTyler(e)
 
+@mediaGroup.command(name="shuffle", description="Toggles shuffle for the queue. Shuffle turns off when the queue is empty")
+async def shuffle(interaction: discord.Interaction):
+    try:
+        await media.shuffle(interaction)
+    except Exception as e:
+        await dmTyler(e)
+
 ####        Mention Commands        ####
 mentionGroup = app_commands.Group(name='random', description='"@" a random person in the discord server')
 @mentionGroup.command(name='mention', description='"@" a random person in the discord server')

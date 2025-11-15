@@ -1,6 +1,7 @@
 import discord
 import re
 import botSupport.audioManager as audioManager
+import botSupport.globalVariables as gv
 
 async def play(interaction: discord.Interaction, url = str|None):
     await interaction.response.defer()
@@ -43,7 +44,7 @@ async def pause(interaction: discord.Interaction):
     elif botVC.channel == userVC.channel:
         if botVC.is_playing():
             try:
-                await audioManager.pause(botVC)
+                audioManager.pause(botVC)
             except Exception as e:
                 await interaction.edit_original_response(content=f'I failed to pause the audio playing!')
                 raise Exception(f"Failed to pause music in media.pause\n{e}")
@@ -66,7 +67,7 @@ async def stop(interaction: discord.Interaction):
         await interaction.edit_original_response(content=f'I\'m not in a vc... what am I even supposed to stop?')
     elif botVC.channel == userVC.channel:
         try:
-            await audioManager.stop(botVC)
+            audioManager.stop(botVC)
         except Exception as e:
                 await interaction.edit_original_response(content=f'I failed to stop the audio playing!')
                 raise Exception(f"Failed to stop music in media.stop\n{e}")
@@ -93,3 +94,24 @@ async def skip(interaction: discord.Interaction):
     else:
         await interaction.edit_original_response(content=f'We aren\'t in the same vc... just tell me you hate me next time 😔')
 
+async def shuffle(interaction: discord.Interaction):
+    await interaction.response.defer()
+    userVC = interaction.user.voice
+    botVC: discord.VoiceClient | None = interaction.guild.voice_client
+
+    if not userVC:
+        await interaction.edit_original_response(content=f'You are not in a voice channel!')
+    elif botVC == None:
+        await interaction.edit_original_response(content=f'I can\'t skip nothing 🙄')
+    elif botVC.channel == userVC.channel:
+        try:
+            audioManager.shuffleAudio()
+        except Exception as e:
+                await interaction.edit_original_response(content=f'I failed to activate shuffle!')
+                raise Exception(f"Failed to skip music in media.skip\n{e}")
+        if audioManager.shuffle:
+            await interaction.edit_original_response(content=f'Activated shuffle!')
+        else:
+            await interaction.edit_original_response(content=f'Deactivated shuffle!')
+    else:
+        await interaction.edit_original_response(content=f'We aren\'t in the same vc... just tell me you hate me next time 😔')

@@ -1,12 +1,14 @@
 import discord
 import platform
 import asyncio
+import random
 from yt_dlp import YoutubeDL
 from botSupport.botStatus import changeStatus
 import botSupport.globalVariables as gv
 from botSupport.errorHandling import dmTyler
 
 audioQueue = []
+shuffle = False
 
 def loadOpus():
     if platform.system() == 'Darwin':
@@ -45,10 +47,15 @@ async def joinVC(interaction: discord.Interaction):
 
 
 async def play(botVC: discord.VoiceClient):
+    global shuffle
     if botVC and botVC.is_playing():
         return
     if audioQueue:
-        audioTitle, audioURL = await asyncio.to_thread(getAudioStreamInfo, audioQueue.pop(0))
+        if shuffle:
+            nextAudio = audioQueue.pop(random.randint(0, len(audioQueue) - 1))
+        else:
+            nextAudio = audioQueue.pop(0)
+        audioTitle, audioURL = await asyncio.to_thread(getAudioStreamInfo, nextAudio)
         
         try:
             gv.pauseRandomEvents = True
@@ -66,6 +73,7 @@ async def play(botVC: discord.VoiceClient):
         await asyncio.sleep(1)
         gv.pauseRandomEvents = False
         await changeStatus()
+        shuffle = False
         await botVC.disconnect()
 
 
@@ -103,11 +111,15 @@ def processPlaylist(url):
 def pause(botVC: discord.VoiceClient):
     botVC.pause()
 
-async def stop(botVC: discord.VoiceClient):
-    await botVC.disconnect()
+def stop(botVC: discord.VoiceClient):
     global audioQueue
     audioQueue = []
+    botVC.stop()
 
 async def skip(botVC: discord.VoiceClient):
-    await botVC.stop()
-    await play(botVC)
+    botVC.stop()
+
+def shuffleAudio():
+    global shuffle
+    shuffle = not shuffle
+    return shuffle
