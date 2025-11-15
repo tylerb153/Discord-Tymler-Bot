@@ -171,6 +171,13 @@ async def play(interaction: discord.Interaction, url: str = None):
     except Exception as e:
         await dmTyler(e)
 
+@mediaGroup.command(name='pause', description='Pause playing media')
+async def pause(interaction: discord.Interaction):
+    try:
+        await media.pause(interaction)
+    except Exception as e:
+        await dmTyler(e)
+
 ####        Mention Commands        ####
 mentionGroup = app_commands.Group(name='random', description='"@" a random person in the discord server')
 @mentionGroup.command(name='mention', description='"@" a random person in the discord server')

@@ -11,12 +11,12 @@ async def play(interaction: discord.Interaction, url = str|None):
     
     elif url == None and botVC and botVC.is_paused():
         botVC.resume()
-        await interaction.edit_original_response(content=f'Resuming audio')
+        await interaction.edit_original_response(content=f'Resuming audio!')
     
     elif url == None and botVC and not botVC.is_paused():
         await interaction.edit_original_response(content=f'Audio is playing already. Enter a url to queue something')
     
-    elif url and (botVC == None or botVC.channel == interaction.user.voice.channel):
+    elif url and (botVC == None or botVC.channel == userVC.channel):
         if re.search(pattern="(https://)?youtu.be*", string=url) != None or re.search(pattern="(https://www.)?youtube.com/watch\?*", string=url) != None:
             try:
                 await audioManager.addAudio(interaction, url)
@@ -30,4 +30,28 @@ async def play(interaction: discord.Interaction, url = str|None):
     else:
         await interaction.edit_original_response(content="Please provide a url to begin playing audio")
     return
+
+async def pause(interaction: discord.Interaction):
+    await interaction.response.defer()
+    userVC = interaction.user.voice
+    botVC: discord.VoiceClient | None = interaction.guild.voice_client
+    
+    if not userVC:
+        await interaction.edit_original_response(content=f'You are not in a voice channel!')
+    elif botVC == None:
+        await interaction.edit_original_response(content=f'I\'m not in a vc... You woke me from my nap {interaction.user.mention} 😡')
+    elif botVC.channel == userVC.channel:
+        if botVC.is_playing():
+            try:
+                await audioManager.pause(botVC)
+            except Exception as e:
+                raise Exception(f"Failed to pause music in media.pause\n{e}")
+            await interaction.edit_original_response(content=f'Paused the audio playing!')
+        elif botVC.is_paused():    
+            await interaction.edit_original_response(content=f'Audio is already paused I can\'t pause it harder!')
+        else:
+            await interaction.edit_original_response(content=f'I\'m not playing anything that I can pause!')
+    else:
+        await interaction.edit_original_response(content=f'We aren\'t in the same vc so stop bothering me ☹️')
+    
 

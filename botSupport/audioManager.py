@@ -64,8 +64,6 @@ async def play(botVC: discord.VoiceClient):
         gv.pauseRandomEvents = False
         await changeStatus()
         await botVC.disconnect()
-    
-    return
 
 
 def getAudioStreamInfo(url):
@@ -88,3 +86,6 @@ def getAudioStreamInfo(url):
             print(f'Playing URL: {info.get('url')}')
             return info.get('title'), info.get('url')
     return
+
+def pause(botVC: discord.VoiceClient):
+    botVC.pause()
