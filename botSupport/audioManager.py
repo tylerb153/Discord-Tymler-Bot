@@ -20,7 +20,7 @@ async def addAudio(interaction: discord.Interaction, audio: discord.FFmpegPCMAud
     except Exception as e:
         raise Exception(f"Could not add audio to queue\n{e}")
     try:
-        await joinVC(interaction)
+        gv.client.loop.create_task(joinVC(interaction))
     except Exception as e:
         raise Exception(f"Failed to call joinVC in addAudio\n{e}")
 
@@ -35,7 +35,7 @@ async def joinVC(interaction: discord.Interaction):
         raise Exception(f"Failed to connect to the voice channel\n{e}")
     try:
         await asyncio.sleep(1)
-        await play(interaction.guild.voice_client)
+        gv.client.loop.create_task(play(interaction.guild.voice_client))
     except Exception as e:
         raise Exception(f"Failed to call play in joinVC\n{e}")
     return
