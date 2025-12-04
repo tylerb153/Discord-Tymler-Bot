@@ -66,7 +66,7 @@ async def play(botVC: discord.VoiceClient):
         
         try:
             await asyncio.sleep(1)
-            botVC.play(discord.FFmpegPCMAudio(source=audioURL, options=f"-filter:a volume={0.25}"), after=lambda e: gv.client.loop.create_task(play(botVC)))
+            botVC.play(discord.FFmpegPCMAudio(source=audioURL, options=f"-filter:a volume={0.15}"), after=lambda e: gv.client.loop.create_task(play(botVC)))
         except Exception as e:
             raise Exception(f"Failed to play audio in audioManager.play\n{e}")
     else:

@@ -163,7 +163,7 @@ async def leaveVC(interaction: discord.Interaction):
         await dmTyler(e)
 
 ####        Media Commands        ####
-mediaGroup = app_commands.Group(name='media', description='Control Tymler\'s music capabilities')
+mediaGroup = app_commands.Group(name='alexa', description='Control Tymler\'s music capabilities')
 @mediaGroup.command(name="play", description="Resume/Start playing media or add to the queue")
 async def play(interaction: discord.Interaction, url: str = None):
     try:
