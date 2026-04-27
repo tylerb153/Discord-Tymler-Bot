@@ -2,6 +2,8 @@
 
 FROM python:3.13.8-slim
 
+ENV PYTHONUNBUFFERED=1
+
 RUN apt-get update
 RUN apt-get install -y libopus0 ffmpeg
 # RUN apt-get update && apt-get install -y openssh-client

@@ -9,7 +9,7 @@ import botSupport.globalVariables
 async def playRandomSoundLoop():
     client = botSupport.globalVariables.client
     while not client.is_closed():
-        await asyncio.sleep(random.randint(300, 10800))
+        await asyncio.sleep(random.randint(600, 10800))
         print("Playing random sound")
         for guild in client.guilds:
             activeVoiceChannels = [vc for vc in guild.voice_channels if len(vc.members) > 0]
