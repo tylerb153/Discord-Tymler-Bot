@@ -30,9 +30,9 @@ tree = app_commands.CommandTree(client)
 
 ####        Server Commands        ####
 @tree.command(name='whitelist', description='Add your minecraft username to the whitelist')
-async def whitelist(interaction: discord.Interaction, username: str):
+async def whitelist(interaction: discord.Interaction):
     try:
-        await server.whitelist(interaction, username)
+        await server.whitelist(interaction)
     except Exception as e:
         await dmTyler(e)
         
