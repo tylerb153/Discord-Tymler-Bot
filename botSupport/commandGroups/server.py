@@ -15,14 +15,15 @@ async def whitelist(interaction: discord.Interaction):
         def __init__(self, serverType: str):
             super().__init__(title="Whitelist")
             self.serverType = serverType
-            self.username = discord.ui.TextInput(label=f"Minecraft Username for {serverType}", placeholder="Username")
+            self.usernameTextInput = discord.ui.TextInput(label=f"Minecraft Username for {serverType}", placeholder="Username")
 
-            self.add_item(self.username)
+            self.add_item(self.usernameTextInput)
 
 
         async def on_submit(self, interaction: discord.Interaction):
             await interaction.response.defer()
-            finalmsg = f'{self.username} was added to the whitelist' #adds username and has been added to the varible finalmsg
+            username = self.usernameTextInput.value
+            finalmsg = f'{username} was added to the whitelist' #adds username and has been added to the varible finalmsg
             try:
                 # raise Exception("Testing wooooo")
                 match self.serverType: 
@@ -38,13 +39,13 @@ async def whitelist(interaction: discord.Interaction):
                         serverRunning = await getServerRunning(os.getenv('SERVER_URL'))
                 if (serverRunning[0]):
                     with MCRcon(serverIP, os.getenv('RCON_PASSWORD'), serverPort) as mcr: #send the whitelist command to minecraft server
-                        resp = mcr.command("/whitelist add " + self.username)
+                        resp = mcr.command("/whitelist add " + username)
                         print(resp)
                         if 'whitelisted' in resp:
-                            finalmsg = f'**{self.username}** is already whitelisted'
+                            finalmsg = f'**{username}** is already whitelisted'
                         elif 'not exist' in resp:
-                            finalmsg = f'**{self.username}** does not exist please double check your username or kill Microsoft'
-                            await dmTyler(f'Microsoft sucks so **{self.username}** apparently doesn\'t exist. Please fix or people will YELL at you 😰')
+                            finalmsg = f'**{username}** does not exist please double check your username or kill Microsoft'
+                            await dmTyler(f'Microsoft sucks so **{username}** apparently doesn\'t exist. Please fix or people will YELL at you 😰')
                     print(interaction.guild)
                     if interaction.guild is not None and interaction.guild.id == cultGuildID:
                         await interaction.user.add_roles(discord.utils.get(interaction.user.guild.roles, name=roleName))
@@ -53,7 +54,7 @@ async def whitelist(interaction: discord.Interaction):
                 
                 await interaction.edit_original_response(content=finalmsg, view=None)
             except Exception as e:
-                await interaction.edit_original_response(content=f'I couldn\'t add **{self.username}** :sob: and have notified <@{tylerUserID}>', view=None)
+                await interaction.edit_original_response(content=f'I couldn\'t add **{username}** :sob: and have notified <@{tylerUserID}>', view=None)
                 raise Exception(f'An error occured in the whitelist command with error:\n{e}')
     
     class whitelistView(discord.ui.View):
