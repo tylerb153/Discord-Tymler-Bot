@@ -30,10 +30,12 @@ async def whitelist(interaction: discord.Interaction):
                         case "Modded":
                             serverIP = os.getenv('MODDED_MINECRAFT_SERVER_IP_ADDRESS')
                             roleName = "Cult 3.5 Members"
+                            serverPort = os.getenv('MODDED_MINECRAFT_SERVER_RCON_PORT')
                         case _:
                             serverIP = os.getenv('MINECRAFT_SERVER_IP_ADDRESS')
                             roleName = "Cult 3.0 Members"
-                    with MCRcon(serverIP, os.getenv('RCON_PASSWORD')) as mcr: #send the whitelist command to minecraft server
+                            serverPort = os.getenv('MINECRAFT_SERVER_RCON_PORT')
+                    with MCRcon(serverIP, os.getenv('RCON_PASSWORD'), serverPort) as mcr: #send the whitelist command to minecraft server
                         resp = mcr.command("/whitelist add " + self.username)
                         print(resp)
                         if 'whitelisted' in resp:
