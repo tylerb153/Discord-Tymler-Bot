@@ -3,7 +3,7 @@ import requests
 import subprocess
 import os
 import asyncio
-from typing import Any, Optional 
+from typing import Any
 from mcrcon import MCRcon
 from botSupport.errorHandling import dmTyler
 from botSupport.globalVariables import tylerUserID, cultGuildID
@@ -25,16 +25,18 @@ async def whitelist(interaction: discord.Interaction):
             finalmsg = f'{self.username} was added to the whitelist' #adds username and has been added to the varible finalmsg
             try:
                 # raise Exception("Testing wooooo")
-                if (await getServerRunning()):
-                    match self.serverType: 
-                        case "Modded":
-                            serverIP = os.getenv('MODDED_MINECRAFT_SERVER_IP_ADDRESS')
-                            roleName = "Cult 3.5 Members"
-                            serverPort = int(os.getenv('MODDED_MINECRAFT_SERVER_RCON_PORT'))
-                        case _:
-                            serverIP = os.getenv('MINECRAFT_SERVER_IP_ADDRESS')
-                            roleName = "Cult 3.0 Members"
-                            serverPort = int(os.getenv('MINECRAFT_SERVER_RCON_PORT'))
+                match self.serverType: 
+                    case "Modded":
+                        serverIP = os.getenv('MODDED_MINECRAFT_SERVER_IP_ADDRESS')
+                        roleName = "Cult 3.5 Members"
+                        serverPort = int(os.getenv('MODDED_MINECRAFT_SERVER_RCON_PORT'))
+                        serverRunning = await getServerRunning(os.getenv('MODDED_SERVER_URL'))
+                    case _:
+                        serverIP = os.getenv('MINECRAFT_SERVER_IP_ADDRESS')
+                        roleName = "Cult 3.0 Members"
+                        serverPort = int(os.getenv('MINECRAFT_SERVER_RCON_PORT'))
+                        serverRunning = await getServerRunning(os.getenv('SERVER_URL'))
+                if (serverRunning[0]):
                     with MCRcon(serverIP, os.getenv('RCON_PASSWORD'), serverPort) as mcr: #send the whitelist command to minecraft server
                         resp = mcr.command("/whitelist add " + self.username)
                         print(resp)
@@ -94,10 +96,10 @@ async def status(interaction: discord.Interaction):
             await dmTyler(":rotating_light: The Minecraft Cult Server is Offline! WEEE WOOO WEEE WOOO :rotating_light:")
         await interaction.edit_original_response(content=f":red_circle: The Minecraft Cult Server is Offline! :(")
 
-async def getServerRunning() -> tuple[bool, Any]:
+async def getServerRunning(urlAddress: str) -> tuple[bool, Any]:
     try:
         # raise Exception("Testing wooooo")
-        url = "https://api.mcstatus.io/v2/status/java/mc.theminecraftcult.com"
+        url = f"https://api.mcstatus.io/v2/status/java/{urlAddress}"
         response = requests.get(url)
 
         if response.status_code == 200:
